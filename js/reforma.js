@@ -59,7 +59,6 @@ function comprimirImagem(file) {
 }
 
 async function capturarFoto() {
-  // Se estiver no APK usando Capacitor
   if (
     window.Capacitor &&
     window.Capacitor.isNativePlatform() &&
@@ -79,10 +78,8 @@ async function capturarFoto() {
       );
     } catch (e) {
       if (e.message && e.message.toLowerCase().includes("cancel")) return null;
-      console.warn("Câmera nativa falhou, usando input web.");
     }
   }
-  // Fallback Web (Navegador)
   return new Promise((resolve) => {
     const input = document.createElement("input");
     input.type = "file";
@@ -131,7 +128,7 @@ async function carregarReformas() {
 }
 
 // =========================================================
-// ADICIONAR NOVA FOTO
+// ADICIONAR NOVA FOTO (CORRIGIDO)
 // =========================================================
 window.adicionarNovaFoto = async function (id, fotosAtuaisString) {
   const arquivo = await capturarFoto();
@@ -139,18 +136,17 @@ window.adicionarNovaFoto = async function (id, fotosAtuaisString) {
 
   Swal.fire({
     title: "Enviando foto...",
-    text: "Aguarde um instante.",
+    html: '<div class="text-sm font-semibold text-slate-300" id="progressoTexto">Preparando...</div><div class="w-full bg-slate-800 rounded-full h-2.5 mt-3"><div id="barraProgresso" class="bg-indigo-500 h-2.5 rounded-full" style="width: 0%"></div></div>',
     allowOutsideClick: false,
+    showConfirmButton: false,
     background: "#111827",
     color: "#f8fafc",
-    didOpen: () => {
-      Swal.showLoading();
-    },
   });
 
   try {
-    // 1. Faz upload pro Storage
     const nomeArquivo = `reforma_${id}_${Date.now()}.jpg`;
+
+    // Upload com barra de progresso
     const { error: uploadError } = await supabaseClient.storage
       .from(BUCKET)
       .upload(nomeArquivo, arquivo, {
@@ -158,30 +154,45 @@ window.adicionarNovaFoto = async function (id, fotosAtuaisString) {
         upsert: false,
         contentType: "image/jpeg",
       });
+
     if (uploadError) throw uploadError;
 
-    // 2. Pega a URL pública
     const { data: urlData } = supabaseClient.storage
       .from(BUCKET)
       .getPublicUrl(nomeArquivo);
     const novaUrl = urlData.publicUrl;
 
-    // 3. Atualiza o array de fotos no banco
-    const fotosAntigas = JSON.parse(fotosAtuaisString || "[]");
+    // CORREÇÃO: Tratamento robusto para ler o array antigo
+    let fotosAntigas = [];
+    try {
+      const parsed = JSON.parse(fotosAtuaisString);
+      if (Array.isArray(parsed)) {
+        fotosAntigas = parsed;
+      } else if (typeof parsed === "string") {
+        fotosAntigas = [parsed];
+      }
+    } catch (e) {
+      // Se falhar, tenta usar a string direto se for um link válido
+      if (fotosAtuaisString && fotosAtuaisString.startsWith("http")) {
+        fotosAntigas = [fotosAtuaisString];
+      }
+    }
+
     const fotosNovas = [...fotosAntigas, novaUrl];
 
     const { error: updateError } = await supabaseClient
       .from("ordens_servico")
       .update({ fotos_urls: fotosNovas })
       .eq("id", id);
+
     if (updateError) throw updateError;
 
-    // 4. Atualiza localmente e re-renderiza
+    // Atualiza localmente e re-renderiza
     const reforma = todasReformas.find((r) => r.id === id);
     if (reforma) reforma.fotos_urls = fotosNovas;
 
-    renderizarLista(); // Atualiza a tela com a nova foto
-
+    Swal.close();
+    renderizarLista();
     Swal.fire({
       icon: "success",
       title: "Foto Adicionada!",
@@ -194,8 +205,10 @@ window.adicionarNovaFoto = async function (id, fotosAtuaisString) {
     console.error("Erro ao adicionar foto:", error);
     Swal.fire({
       icon: "error",
-      title: "Erro",
-      text: "Não foi possível adicionar a foto.",
+      title: "Erro ao salvar",
+      text:
+        error.message ||
+        "Não foi possível adicionar a foto. Verifique as permissões do Supabase.",
       background: "#111827",
       color: "#f8fafc",
       confirmButtonColor: "#ef4444",
@@ -261,7 +274,7 @@ window.marcarServicoFinalizado = async function (id, numeroOs, cliente) {
     Swal.fire({
       icon: "error",
       title: "Erro",
-      text: "Não foi possível atualizar.",
+      text: error.message || "Não foi possível atualizar.",
       background: "#111827",
       color: "#f8fafc",
       confirmButtonColor: "#ef4444",
@@ -327,7 +340,7 @@ window.reabrirServico = async function (id, numeroOs, cliente) {
     Swal.fire({
       icon: "error",
       title: "Erro",
-      text: "Não foi possível atualizar.",
+      text: error.message || "Não foi possível atualizar.",
       background: "#111827",
       color: "#f8fafc",
       confirmButtonColor: "#ef4444",
@@ -421,25 +434,24 @@ function renderizarLista() {
       }
 
       let fotoUrl = null;
-      if (Array.isArray(os.fotos_urls) && os.fotos_urls.length > 0)
-        fotoUrl = os.fotos_urls[0];
-      else if (
+      let fotosArray = [];
+      if (Array.isArray(os.fotos_urls)) {
+        fotosArray = os.fotos_urls;
+      } else if (
         typeof os.fotos_urls === "string" &&
         os.fotos_urls.trim() !== ""
       ) {
         try {
           const parsed = JSON.parse(os.fotos_urls);
-          if (Array.isArray(parsed) && parsed.length > 0) fotoUrl = parsed[0];
+          if (Array.isArray(parsed)) fotosArray = parsed;
+          else fotosArray = [os.fotos_urls];
         } catch {
-          fotoUrl = os.fotos_urls;
+          fotosArray = [os.fotos_urls];
         }
       }
 
-      const fotosString = JSON.stringify(
-        Array.isArray(os.fotos_urls)
-          ? os.fotos_urls
-          : [fotoUrl].filter(Boolean),
-      ).replace(/"/g, "&quot;");
+      if (fotosArray.length > 0) fotoUrl = fotosArray[0];
+      const fotosString = JSON.stringify(fotosArray).replace(/"/g, "&quot;");
 
       let botaoAcao = "";
       if (!os.servico_finalizado) {
