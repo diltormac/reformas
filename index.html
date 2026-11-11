@@ -6,7 +6,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover"
     />
-    <title>Painel de Reformas</title>
+    <title>OS Fácil — Painel de Reformas</title>
 
     <!-- Tailwind e SweetAlert -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -89,8 +89,17 @@
 
     <!-- PWA: instalação e ícones -->
     <link rel="manifest" href="./manifest.json" />
-    <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32x32.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png" />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="./favicon-32x32.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="./apple-touch-icon.png"
+    />
     <meta name="theme-color" content="#073BCE" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -135,8 +144,9 @@
     <!-- MAIN -->
     <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
       <div class="max-w-7xl mx-auto space-y-6">
-        <!-- CARDS RESUMO -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <!-- CARDS RESUMO (AGORA COM 3 CARDS) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- Card 1: Total -->
           <div
             class="bg-darkcard/80 backdrop-blur-sm p-4 rounded-2xl border border-darkborder shadow-xl hover:border-slate-700 transition cursor-pointer"
           >
@@ -152,46 +162,35 @@
               0
             </p>
           </div>
-          <div
-            class="bg-darkcard/80 backdrop-blur-sm p-4 rounded-2xl border border-amber-500/30 shadow-xl hover:border-amber-500/50 transition cursor-pointer"
-          >
-            <p
-              class="text-[11px] font-extrabold text-amber-400 uppercase tracking-wider"
-            >
-              Pendentes
-            </p>
-            <p
-              class="text-3xl font-black text-amber-300 mt-2 tracking-tight"
-              id="statPendente"
-            >
-              0
-            </p>
-          </div>
-          <div
-            class="bg-darkcard/80 backdrop-blur-sm p-4 rounded-2xl border border-blue-500/30 shadow-xl hover:border-blue-500/50 transition cursor-pointer"
-          >
-            <p
-              class="text-[11px] font-extrabold text-blue-400 uppercase tracking-wider"
-            >
-              Em Andamento
-            </p>
-            <p
-              class="text-3xl font-black text-blue-300 mt-2 tracking-tight"
-              id="statAndamento"
-            >
-              0
-            </p>
-          </div>
+
+          <!-- Card 2: Retiradas -->
           <div
             class="bg-darkcard/80 backdrop-blur-sm p-4 rounded-2xl border border-emerald-500/30 shadow-xl hover:border-emerald-500/50 transition cursor-pointer"
           >
             <p
               class="text-[11px] font-extrabold text-emerald-400 uppercase tracking-wider"
             >
-              Prontas p/ Retirada
+              Retiradas
             </p>
             <p
               class="text-3xl font-black text-emerald-300 mt-2 tracking-tight"
+              id="statRetiradas"
+            >
+              0
+            </p>
+          </div>
+
+          <!-- Card 3: Prontas p/ Retirada -->
+          <div
+            class="bg-darkcard/80 backdrop-blur-sm p-4 rounded-2xl border border-blue-500/30 shadow-xl hover:border-blue-500/50 transition cursor-pointer"
+          >
+            <p
+              class="text-[11px] font-extrabold text-blue-400 uppercase tracking-wider"
+            >
+              Prontas p/ Retirada
+            </p>
+            <p
+              class="text-3xl font-black text-blue-300 mt-2 tracking-tight"
               id="statProntas"
             >
               0
@@ -264,7 +263,7 @@
 
     <!-- SCRIPTS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Carrega o seu script de reformas que já está funcionando -->
+    <!-- Carrega o script de reformas -->
     <script src="js/reforma.js"></script>
 
     <!-- Registro do Service Worker (PWA) -->

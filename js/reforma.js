@@ -345,43 +345,39 @@ window.reabrirServico = async function (id, numeroOs, cliente) {
 };
 
 // =========================================================
-// ATUALIZAR ESTATÍSTICAS E FILTROS
+// ATUALIZAR ESTATÍSTICAS E FILTROS (NOVA LÓGICA DE CARDS)
 // =========================================================
 function atualizarEstatisticas() {
   const total = todasReformas.length;
-  const pendente = todasReformas.filter(
-    (o) => o.status === "Pendente" && !o.servico_finalizado,
+
+  // "Prontas p/ Retirada": serviço finalizado E status NÃO é "Concluído" (ainda está na loja)
+  const prontas = todasReformas.filter(
+    (o) => o.servico_finalizado && o.status !== "Concluído",
   ).length;
-  const andamento = todasReformas.filter(
-    (o) => o.status === "Em andamento" && !o.servico_finalizado,
+
+  // "Retiradas": status é "Concluído" (o cliente já levou)
+  const retiradas = todasReformas.filter(
+    (o) => o.status === "Concluído",
   ).length;
-  const prontas = todasReformas.filter((o) => o.servico_finalizado).length;
 
   document.getElementById("statTotal").textContent = total;
-  document.getElementById("statPendente").textContent = pendente;
-  document.getElementById("statAndamento").textContent = andamento;
+  document.getElementById("statRetiradas").textContent = retiradas;
   document.getElementById("statProntas").textContent = prontas;
 }
 
+// Configurando os cliques nos cards para filtrar a lista
 document.getElementById("statTotal").parentElement.onclick = () => {
   filtroAtual = "todas";
   renderizarLista();
 };
-document.getElementById("statPendente").parentElement.onclick = () => {
-  filtroAtual = "pendente";
-  renderizarLista();
-};
-document.getElementById("statAndamento").parentElement.onclick = () => {
-  filtroAtual = "andamento";
+document.getElementById("statRetiradas").parentElement.onclick = () => {
+  filtroAtual = "retiradas";
   renderizarLista();
 };
 document.getElementById("statProntas").parentElement.onclick = () => {
   filtroAtual = "prontas";
   renderizarLista();
 };
-document
-  .querySelectorAll(".cursor-default")
-  .forEach((el) => el.classList.add("cursor-pointer"));
 
 // =========================================================
 // RENDERIZAR A LISTA
@@ -390,22 +386,21 @@ function renderizarLista() {
   const termo = inputBusca.value.trim().toLowerCase();
 
   const filtradas = todasReformas.filter((os) => {
+    // Filtro de Busca
     if (termo) {
       const texto =
         `${os.numero_os || ""} ${os.nome || ""} ${os.cor || ""}`.toLowerCase();
       if (!texto.includes(termo)) return false;
     }
-    if (filtroAtual === "prontas" && !os.servico_finalizado) return false;
-    if (
-      filtroAtual === "pendente" &&
-      (os.servico_finalizado || os.status !== "Pendente")
-    )
-      return false;
-    if (
-      filtroAtual === "andamento" &&
-      (os.servico_finalizado || os.status !== "Em andamento")
-    )
-      return false;
+
+    // Filtros dos Cards
+    if (filtroAtual === "prontas") {
+      if (!os.servico_finalizado || os.status === "Concluído") return false;
+    }
+    if (filtroAtual === "retiradas") {
+      if (os.status !== "Concluído") return false;
+    }
+
     return true;
   });
 
@@ -425,8 +420,11 @@ function renderizarLista() {
 
       let badgeHtml = `<span class="text-xs font-black px-3.5 py-1.5 rounded-xl flex-shrink-0 ${bgStatus} shadow-md uppercase tracking-wider">${os.status || "Pendente"}</span>`;
 
-      if (os.servico_finalizado) {
-        badgeHtml = `<span class="text-xs font-black px-3.5 py-1.5 rounded-xl flex-shrink-0 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-md uppercase tracking-wider flex items-center gap-1.5"><i class="fa-solid fa-circle-check"></i> Pronto p/ Retirada</span>`;
+      // Lógica visual dos status no card
+      if (os.status === "Concluído") {
+        badgeHtml = `<span class="text-xs font-black px-3.5 py-1.5 rounded-xl flex-shrink-0 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-md uppercase tracking-wider flex items-center gap-1.5"><i class="fa-solid fa-check-double"></i> Entregue / Retirada</span>`;
+      } else if (os.servico_finalizado) {
+        badgeHtml = `<span class="text-xs font-black px-3.5 py-1.5 rounded-xl flex-shrink-0 bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 shadow-md uppercase tracking-wider flex items-center gap-1.5"><i class="fa-solid fa-circle-check"></i> Pronto p/ Retirada</span>`;
       }
 
       let fotoUrl = null;
@@ -450,14 +448,16 @@ function renderizarLista() {
       const fotosString = JSON.stringify(fotosArray).replace(/"/g, "&quot;");
 
       let botaoAcao = "";
-      if (!os.servico_finalizado) {
-        botaoAcao = `<button onclick="marcarServicoFinalizado('${os.id}', '${os.numero_os || ""}', '${os.nome || ""}')" class="w-full mt-3 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-emerald-900/30 transition flex items-center justify-center gap-2"><i class="fa-solid fa-lock text-sm"></i> Finalizar Serviço</button>`;
-      } else {
-        botaoAcao = `<div class="w-full mt-3 flex gap-2"><div class="flex-1 py-2 px-2 bg-emerald-950/50 border border-emerald-500/30 text-emerald-400 font-bold text-[11px] rounded-xl flex items-center justify-center gap-1.5 uppercase"><i class="fa-solid fa-thumbs-up"></i> Aguardando Cliente</div><button onclick="reabrirServico('${os.id}', '${os.numero_os || ""}', '${os.nome || ""}')" class="w-10 h-10 flex-shrink-0 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 rounded-xl flex items-center justify-center transition" title="Reabrir OS (Requer senha)"><i class="fa-solid fa-lock-open"></i></button></div>`;
+      if (os.status !== "Concluído") {
+        if (!os.servico_finalizado) {
+          botaoAcao = `<button onclick="marcarServicoFinalizado('${os.id}', '${os.numero_os || ""}', '${os.nome || ""}')" class="w-full mt-3 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-indigo-900/30 transition flex items-center justify-center gap-2"><i class="fa-solid fa-lock text-sm"></i> Finalizar Serviço</button>`;
+        } else {
+          botaoAcao = `<div class="w-full mt-3 flex gap-2"><div class="flex-1 py-2 px-2 bg-emerald-950/50 border border-emerald-500/30 text-emerald-400 font-bold text-[11px] rounded-xl flex items-center justify-center gap-1.5 uppercase"><i class="fa-solid fa-thumbs-up"></i> Aguardando Cliente</div><button onclick="reabrirServico('${os.id}', '${os.numero_os || ""}', '${os.nome || ""}')" class="w-10 h-10 flex-shrink-0 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 rounded-xl flex items-center justify-center transition" title="Reabrir OS (Requer senha)"><i class="fa-solid fa-lock-open"></i></button></div>`;
+        }
       }
 
       let avisoTempo = "";
-      if (os.servico_finalizado) {
+      if (os.servico_finalizado && os.status !== "Concluído") {
         const diffDias = Math.floor(
           (new Date() - new Date(os.created_at)) / (1000 * 60 * 60 * 24),
         );
@@ -581,8 +581,6 @@ document.addEventListener("keydown", (e) => {
 // =========================================================
 // ATUALIZAÇÃO AUTOMÁTICA (REALTIME + TEMPORIZADOR)
 // =========================================================
-
-// 1. Escuta mudanças em tempo real no Supabase
 supabaseClient
   .channel("public:ordens_servico_reforma")
   .on(
@@ -598,7 +596,6 @@ supabaseClient
   )
   .subscribe();
 
-// 2. Temporizador de segurança (atualiza a cada 30 segundos)
 setInterval(() => {
   console.log("Temporizador: atualizando lista de reformas...");
   carregarReformas();
