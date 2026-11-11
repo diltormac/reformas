@@ -1,8 +1,9 @@
 /* ============================================================
-   Service Worker — OS Fácil Reformas
-   Sobe a versão do CACHE_NAME sempre que alterar HTML/CSS/JS
+   Service Worker — OS Fácil Reformas (Atualização Automática)
    ============================================================ */
-const CACHE_NAME = "osfacil-reformas-v2";
+
+// Gera um nome de cache único baseado na data/hora atual
+const CACHE_NAME = `osfacil-reformas-${new Date().getTime()}`;
 const CORE_ASSETS = [
   "./",
   "./index.html",
@@ -10,69 +11,64 @@ const CORE_ASSETS = [
   "./js/reforma.js",
 ];
 
-// Instala e pré-cacheia o essencial
+// Instala, ativa imediatamente e pré-cacheia o essencial
 self.addEventListener("install", (event) => {
-  self.skipWaiting();
+  self.skipWaiting(); // Força o novo SW a assumir o controle na hora
   event.waitUntil(
-    caches
-      .open(CACHE_NAME)
-      .then((cache) => cache.addAll(CORE_ASSETS))
-      .catch((err) => console.warn("Falha no pré-cache:", err))
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(CORE_ASSETS);
+    }),
   );
 });
 
-// Ativa e limpa caches antigos
+// Ativa e limpa TODOS os caches antigos
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) =>
-        Promise.all(
-          keys
-            .filter((key) => key !== CACHE_NAME)
-            .map((key) => caches.delete(key))
-        )
-      )
-      .then(() => self.clients.claim())
+      .then((keys) => {
+        return Promise.all(
+          keys.map((key) => {
+            // Se o nome do cache for diferente do atual, apaga!
+            if (key !== CACHE_NAME) {
+              return caches.delete(key);
+            }
+          }),
+        );
+      })
+      .then(() => self.clients.claim()),
   );
 });
 
-// Estratégia: network-first para HTML/JS, cache-first para o resto
+// ESTRATÉGIA: Network First (Rede Primeiro)
+// Tenta pegar da internet. Se der erro, pega do cache.
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
 
   const url = new URL(req.url);
 
-  // Não intercepta chamadas externas (Supabase, CDNs, etc.)
+  // Ignora chamadas para o Supabase, CDNs externos (como Tailwind, FontAwesome) e etc.
+  // O SW só gerencia os arquivos do seu próprio site (HTML, CSS, JS, imagens locais)
   if (url.origin !== self.location.origin) return;
 
-  // HTML e JS: network-first (sempre tenta pegar atualizado)
-  const isDoc =
-    req.destination === "document" || url.pathname.endsWith(".js");
-
-  if (isDoc) {
-    event.respondWith(
-      fetch(req)
-        .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
-          return res;
-        })
-        .catch(() => caches.match(req).then((c) => c || caches.match("./index.html")))
-    );
-    return;
-  }
-
-  // Demais assets: cache-first
   event.respondWith(
-    caches.match(req).then((cached) => {
-      if (cached) return cached;
-      return fetch(req).then((res) => {
+    fetch(req)
+      .then((res) => {
+        // Se conseguiu baixar da internet, salva a versão nova no cache
         const copy = res.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
         return res;
-      });
-    })
+      })
+      .catch(() => {
+        // Se a internet falhou (offline), tenta pegar do cache
+        return caches.match(req).then((cached) => {
+          if (cached) return cached;
+          // Se não achou no cache e é uma página, tenta o index
+          if (req.destination === "document") {
+            return caches.match("./index.html");
+          }
+        });
+      }),
   );
 });
