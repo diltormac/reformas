@@ -1,6 +1,6 @@
 // os_painel/js/reforma.js
 
-// CONEXÃO DIRETA (Mantém a lógica original intacta)
+// CONEXÃO DIRETA
 const supabaseUrl = "https://kiiswukzwwoznkgjyaod.supabase.co";
 const supabaseKey = "sb_publishable_WPRvraB-40Fz1RuKbd5bRg_3tGvyAxg";
 const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
@@ -9,6 +9,7 @@ const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 let todasReformas = [];
 let galeriaFotosAtual = [];
 let indexFotoAtual = 0;
+let filtroAtual = "todas"; // NOVO: Controla o filtro das abas (todas, pendente, andamento, prontas)
 
 const inputBusca = document.getElementById("inputBusca");
 const listaContainer = document.getElementById("listaReformas");
@@ -20,7 +21,9 @@ async function carregarReformas() {
   try {
     const { data, error } = await supabaseClient
       .from("ordens_servico")
-      .select("id, numero_os, nome, cor, status, fotos_urls, created_at")
+      .select(
+        "id, numero_os, nome, cor, status, fotos_urls, created_at, servico_finalizado",
+      )
       .ilike("servico", "%REFORMA%")
       .order("created_at", { ascending: false });
 
@@ -32,32 +35,140 @@ async function carregarReformas() {
   } catch (error) {
     console.error("Erro ao carregar reformas:", error);
     listaContainer.innerHTML = `
-      <div class="col-span-full py-12 text-center text-red-400 bg-red-950/30 rounded-2xl border border-red-500/20 shadow-xl p-6">
+      <div class="col-span-full py-12 text-center text-red-400 bg-red-950/40 rounded-2xl border border-red-500/30 shadow-xl p-6">
         <i class="fa-solid fa-triangle-exclamation text-3xl mb-3 text-red-400"></i>
-        <p class="font-bold text-base text-red-300">Erro ao carregar as reformas</p>
-        <p class="text-xs text-red-400/80 mt-1">${error.message}</p>
+        <p class="font-extrabold text-base text-red-300">Erro ao carregar as reformas</p>
+        <p class="text-xs font-semibold text-red-400/90 mt-1">${error.message}</p>
       </div>`;
   }
 }
 
 // =========================================================
-// ATUALIZAR ESTATÍSTICAS
+// MARCAR OU DESMARCAR SERVIÇO FINALIZADO
+// =========================================================
+window.marcarServicoFinalizado = async function (id, numeroOs, cliente) {
+  try {
+    const { error } = await supabaseClient
+      .from("ordens_servico")
+      .update({ servico_finalizado: true })
+      .eq("id", id);
+
+    if (error) throw error;
+
+    const reforma = todasReformas.find((r) => r.id === id);
+    if (reforma) reforma.servico_finalizado = true;
+
+    atualizarEstatisticas();
+    renderizarLista();
+
+    Swal.fire({
+      icon: "success",
+      title: "Serviço Pronto!",
+      text: `A OS Nº ${numeroOs || "S/N"} (${cliente || "Cliente"}) está pronta para retirada. (A OS continua aberta para acerto financeiro).`,
+      background: "#111827",
+      color: "#f8fafc",
+      confirmButtonColor: "#10b981",
+      confirmButtonText: "OK",
+    });
+  } catch (error) {
+    console.error("Erro ao atualizar serviço:", error);
+    Swal.fire({
+      icon: "error",
+      title: "Erro",
+      text: "Não foi possível atualizar.",
+      background: "#111827",
+      color: "#f8fafc",
+      confirmButtonColor: "#ef4444",
+    });
+  }
+};
+
+// NOVO: REABRIR SERVIÇO (Se clicou errado ou deu problema)
+window.reabrirServico = async function (id, numeroOs, cliente) {
+  const confirmacao = await Swal.fire({
+    title: "Reabrir Serviço?",
+    text: `A OS Nº ${numeroOs || "S/N"} voltará para a produção. Tem certeza?`,
+    icon: "warning",
+    showCancelButton: true,
+    background: "#111827",
+    color: "#f8fafc",
+    confirmButtonColor: "#f59e0b",
+    cancelButtonColor: "#334155",
+    confirmButtonText: "Sim, Reabrir",
+    cancelButtonText: "Cancelar",
+  });
+
+  if (!confirmacao.isConfirmed) return;
+
+  try {
+    const { error } = await supabaseClient
+      .from("ordens_servico")
+      .update({ servico_finalizado: false })
+      .eq("id", id);
+
+    if (error) throw error;
+
+    const reforma = todasReformas.find((r) => r.id === id);
+    if (reforma) reforma.servico_finalizado = false;
+
+    atualizarEstatisticas();
+    renderizarLista();
+
+    Swal.fire({
+      icon: "success",
+      title: "Serviço Reaberto",
+      text: `A OS Nº ${numeroOs || "S/N"} voltou para a produção.`,
+      background: "#111827",
+      color: "#f8fafc",
+      confirmButtonColor: "#10b981",
+      confirmButtonText: "OK",
+    });
+  } catch (error) {
+    console.error("Erro ao reabrir serviço:", error);
+  }
+};
+
+// =========================================================
+// ATUALIZAR ESTATÍSTICAS (E PERMITIR CLICAR PARA FILTRAR)
 // =========================================================
 function atualizarEstatisticas() {
   const total = todasReformas.length;
-  const pendente = todasReformas.filter((o) => o.status === "Pendente").length;
+  const pendente = todasReformas.filter(
+    (o) => o.status === "Pendente" && !o.servico_finalizado,
+  ).length;
   const andamento = todasReformas.filter(
-    (o) => o.status === "Em andamento",
+    (o) => o.status === "Em andamento" && !o.servico_finalizado,
   ).length;
-  const concluido = todasReformas.filter(
-    (o) => o.status === "Concluído",
-  ).length;
+  const prontas = todasReformas.filter((o) => o.servico_finalizado).length;
 
   document.getElementById("statTotal").textContent = total;
   document.getElementById("statPendente").textContent = pendente;
   document.getElementById("statAndamento").textContent = andamento;
-  document.getElementById("statConcluido").textContent = concluido;
+  document.getElementById("statProntas").textContent = prontas;
 }
+
+// NOVO: Configurar os botões de filtro (Cards Resumo)
+document.getElementById("statTotal").parentElement.onclick = () => {
+  filtroAtual = "todas";
+  renderizarLista();
+};
+document.getElementById("statPendente").parentElement.onclick = () => {
+  filtroAtual = "pendente";
+  renderizarLista();
+};
+document.getElementById("statAndamento").parentElement.onclick = () => {
+  filtroAtual = "andamento";
+  renderizarLista();
+};
+document.getElementById("statProntas").parentElement.onclick = () => {
+  filtroAtual = "prontas";
+  renderizarLista();
+};
+
+// Deixa os cards do topo clicáveis (muda o cursor)
+document
+  .querySelectorAll(".cursor-default")
+  .forEach((el) => el.classList.add("cursor-pointer"));
 
 // =========================================================
 // RENDERIZAR A LISTA
@@ -65,91 +176,160 @@ function atualizarEstatisticas() {
 function renderizarLista() {
   const termo = inputBusca.value.trim().toLowerCase();
 
+  // Aplica os dois filtros: a busca digitada E a aba selecionada
   const filtradas = todasReformas.filter((os) => {
-    if (!termo) return true;
-    const texto =
-      `${os.numero_os || ""} ${os.nome || ""} ${os.cor || ""}`.toLowerCase();
-    return texto.includes(termo);
+    // Filtro da Busca
+    if (termo) {
+      const texto =
+        `${os.numero_os || ""} ${os.nome || ""} ${os.cor || ""}`.toLowerCase();
+      if (!texto.includes(termo)) return false;
+    }
+
+    // Filtro das Abas
+    if (filtroAtual === "prontas" && !os.servico_finalizado) return false;
+    if (
+      filtroAtual === "pendente" &&
+      (os.servico_finalizado || os.status !== "Pendente")
+    )
+      return false;
+    if (
+      filtroAtual === "andamento" &&
+      (os.servico_finalizado || os.status !== "Em andamento")
+    )
+      return false;
+
+    return true;
   });
 
   if (filtradas.length === 0) {
     listaContainer.innerHTML = `
-      <div class="col-span-full py-16 text-center text-slate-500 bg-darkcard/40 rounded-2xl border border-darkborder shadow-xl">
-        <i class="fa-solid fa-box-open text-4xl mb-3 text-slate-600"></i>
-        <p class="font-bold text-slate-400 text-sm">Nenhuma reforma encontrada</p>
+      <div class="col-span-full py-16 text-center text-slate-400 bg-darkcard/50 rounded-2xl border border-darkborder shadow-xl">
+        <i class="fa-solid fa-box-open text-4xl mb-3 text-slate-500"></i>
+        <p class="font-bold text-slate-300 text-sm">Nenhuma reforma encontrada</p>
       </div>`;
     return;
   }
 
   listaContainer.innerHTML = filtradas
     .map((os) => {
-      // Define a cor da etiqueta baseada no status com visual moderno
       let bgStatus =
-        "bg-amber-500/10 text-amber-400 border border-amber-500/20"; // Pendente
+        "bg-amber-500/20 text-amber-300 border border-amber-500/40"; // Pendente
       if (os.status === "Em andamento")
-        bgStatus = "bg-blue-500/10 text-blue-400 border border-blue-500/20";
-      if (os.status === "Concluído")
-        bgStatus =
-          "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+        bgStatus = "bg-blue-500/20 text-blue-300 border border-blue-500/40";
       if (os.status === "Cancelado")
-        bgStatus = "bg-rose-500/10 text-rose-400 border border-rose-500/20";
+        bgStatus = "bg-rose-500/20 text-rose-300 border border-rose-500/40";
 
-      const fotoUrl =
-        os.fotos_urls && os.fotos_urls.length > 0 ? os.fotos_urls[0] : null;
+      let badgeHtml = `<span class="text-xs font-black px-3.5 py-1.5 rounded-xl flex-shrink-0 ${bgStatus} shadow-md uppercase tracking-wider">${os.status || "Pendente"}</span>`;
 
-      // Prepara a string com as fotos para o modal
-      const fotosString = JSON.stringify(os.fotos_urls || []).replace(
-        /"/g,
-        "&quot;",
-      );
+      if (os.servico_finalizado) {
+        badgeHtml = `<span class="text-xs font-black px-3.5 py-1.5 rounded-xl flex-shrink-0 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-md uppercase tracking-wider flex items-center gap-1.5">
+                       <i class="fa-solid fa-circle-check"></i> Pronto p/ Retirada
+                     </span>`;
+      }
+
+      // Tratamento seguro para pegar a foto
+      let fotoUrl = null;
+      if (Array.isArray(os.fotos_urls) && os.fotos_urls.length > 0) {
+        fotoUrl = os.fotos_urls[0];
+      } else if (
+        typeof os.fotos_urls === "string" &&
+        os.fotos_urls.trim() !== ""
+      ) {
+        try {
+          const parsed = JSON.parse(os.fotos_urls);
+          if (Array.isArray(parsed) && parsed.length > 0) fotoUrl = parsed[0];
+        } catch (e) {
+          fotoUrl = os.fotos_urls;
+        }
+      }
+
+      const fotosString = JSON.stringify(
+        Array.isArray(os.fotos_urls)
+          ? os.fotos_urls
+          : [fotoUrl].filter(Boolean),
+      ).replace(/"/g, "&quot;");
+
+      // Lógica do Botão de Ação
+      let botaoAcao = "";
+      if (!os.servico_finalizado) {
+        botaoAcao = `
+          <button onclick="marcarServicoFinalizado('${os.id}', '${os.numero_os || ""}', '${os.nome || ""}')" 
+                  class="w-full mt-3 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-emerald-900/30 transition flex items-center justify-center gap-2">
+             <i class="fa-solid fa-check-double text-sm"></i> Marcar Serviço como Pronto
+          </button>`;
+      } else {
+        // NOVO: Se estiver pronto, dá a opção de reabrir se foi um erro
+        botaoAcao = `
+          <div class="w-full mt-3 flex gap-2">
+            <div class="flex-1 py-2 px-2 bg-emerald-950/50 border border-emerald-500/30 text-emerald-400 font-bold text-[11px] rounded-xl flex items-center justify-center gap-1.5 uppercase">
+               <i class="fa-solid fa-thumbs-up"></i> Aguardando Cliente
+            </div>
+            <button onclick="reabrirServico('${os.id}', '${os.numero_os || ""}', '${os.nome || ""}')" 
+                    class="w-10 h-10 flex-shrink-0 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 rounded-xl flex items-center justify-center transition"
+                    title="Reabrir OS (Voltar para produção)">
+              <i class="fa-solid fa-rotate-left"></i>
+            </button>
+          </div>`;
+      }
+
+      // NOVO: Cálculo de dias aguardando retirada
+      let avisoTempo = "";
+      if (os.servico_finalizado) {
+        const dataCriacao = new Date(os.created_at);
+        const dataAtual = new Date();
+        const diffDias = Math.floor(
+          (dataAtual - dataCriacao) / (1000 * 60 * 60 * 24),
+        );
+
+        if (diffDias >= 3) {
+          avisoTempo = `<div class="mt-2 text-center text-[10px] font-bold text-red-400 bg-red-950/40 py-1 rounded border border-red-500/20">
+                          <i class="fa-solid fa-clock mr-1"></i> Aguardando retirada há ${diffDias} dias
+                        </div>`;
+        }
+      }
 
       return `
-        <div class="bg-darkcard/60 backdrop-blur-md rounded-2xl border border-darkborder shadow-xl p-6 flex flex-col justify-between hover:border-slate-700 transition duration-300">
+        <div class="bg-darkcard/80 backdrop-blur-md rounded-2xl border ${os.servico_finalizado ? "border-emerald-500/50 shadow-emerald-950/50" : "border-darkborder"} shadow-2xl p-6 flex flex-col justify-between hover:border-indigo-500/50 transition duration-300">
           <div>
-            <!-- Cabeçalho do Card (Nº OS Gigante) -->
             <div class="flex justify-between items-start mb-4 gap-3">
               <div class="min-w-0 flex-1">
-                <!-- NÚMERO DA OS GRANDE -->
-                <p class="text-4xl sm:text-5xl font-extrabold text-indigo-400 tracking-tight leading-none mb-2">
+                <span class="text-[10px] font-black uppercase tracking-widest text-indigo-400 block mb-1">Ordem de Serviço</span>
+                <p class="text-5xl font-black ${os.servico_finalizado ? "text-emerald-400" : "text-indigo-300"} tracking-tight leading-none mb-2 drop-shadow-sm">
                   ${os.numero_os || "S/N"}
                 </p>
-                <!-- Nome do Cliente -->
-                <p class="text-sm font-semibold text-slate-300 truncate" title="${os.nome || "Sem nome"}">
-                  ${os.nome || "Sem nome"}
+                <p class="text-base font-extrabold text-white tracking-wide truncate" title="${os.nome || "Sem nome"}">
+                  <i class="fa-solid fa-user text-indigo-400 mr-1.5 text-xs"></i> ${os.nome || "Sem nome"}
                 </p>
               </div>
-              <!-- Badge de Status -->
-              <span class="text-[11px] font-bold px-3 py-1.5 rounded-xl flex-shrink-0 ${bgStatus} shadow-sm">
-                ${os.status || "Pendente"}
-              </span>
+              ${badgeHtml}
             </div>
 
-            <!-- Foto -->
             ${
               fotoUrl
-                ? `<div class="w-full h-56 bg-slate-900/60 rounded-xl overflow-hidden mb-4 border border-darkborder cursor-pointer group relative shadow-inner"
+                ? `<div class="w-full h-56 bg-slate-950 rounded-xl overflow-hidden mb-4 border border-darkborder cursor-pointer group relative shadow-inner"
                        onclick="abrirLightbox('${fotosString}', 0)">
                      <img src="${fotoUrl}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" alt="Foto da Roda">
-                     <div class="absolute inset-0 bg-slate-950/0 group-hover:bg-slate-950/40 transition-all duration-300 flex items-center justify-center">
-                       <div class="w-12 h-12 rounded-full bg-indigo-600/90 text-white flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 transform scale-75 group-hover:scale-100">
+                     <div class="absolute inset-0 bg-slate-950/0 group-hover:bg-slate-950/50 transition-all duration-300 flex items-center justify-center">
+                       <div class="w-12 h-12 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 transform scale-75 group-hover:scale-100">
                          <i class="fa-solid fa-magnifying-glass-plus text-base"></i>
                        </div>
                      </div>
                    </div>`
                 : `<div class="w-full h-56 bg-slate-900/40 border border-dashed border-darkborder rounded-xl flex flex-col items-center justify-center text-slate-500 mb-4">
                      <i class="fa-solid fa-image text-3xl mb-2 text-slate-600"></i>
-                     <span class="text-[11px] font-semibold uppercase tracking-wider">Sem foto</span>
+                     <span class="text-xs font-bold uppercase tracking-wider">Sem foto</span>
                    </div>`
             }
 
-            <!-- Informações -->
-            <div class="space-y-2 text-xs text-slate-400 bg-slate-900/40 p-3.5 rounded-xl border border-darkborder">
-              <p class="flex justify-between items-center"><span class="font-medium text-slate-400">Cor:</span> <span class="font-semibold text-slate-200">${os.cor || "Não informada"}</span></p>
+            <div class="space-y-2 text-sm bg-slate-900/80 p-3.5 rounded-xl border border-darkborder">
+              <p class="flex justify-between items-center"><span class="font-bold text-slate-400 uppercase text-[11px] tracking-wider">Cor:</span> <span class="font-extrabold text-white text-base">${os.cor || "Não informada"}</span></p>
             </div>
+
+            ${botaoAcao}
+            ${avisoTempo}
           </div>
 
-          <!-- Rodapé do Card -->
-          <div class="mt-5 pt-3.5 border-t border-darkborder flex justify-end items-center text-[11px] text-slate-400 font-medium">
+          <div class="mt-5 pt-3.5 border-t border-darkborder flex justify-end items-center text-xs text-slate-300 font-bold">
             <span><i class="fa-regular fa-calendar mr-1.5 text-indigo-400"></i> ${new Date(os.created_at).toLocaleDateString("pt-BR")}</span>
           </div>
         </div>
@@ -222,7 +402,6 @@ function atualizarImagemLightbox() {
 // =========================================================
 inputBusca.addEventListener("input", renderizarLista);
 
-// Navegar com as setas do teclado
 document.addEventListener("keydown", (e) => {
   const lightbox = document.getElementById("lightbox");
   if (!lightbox.classList.contains("active")) return;
@@ -232,5 +411,4 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") fecharLightbox();
 });
 
-// Chama a função ao abrir a tela
 carregarReformas();
