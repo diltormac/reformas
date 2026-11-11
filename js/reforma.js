@@ -345,37 +345,48 @@ window.reabrirServico = async function (id, numeroOs, cliente) {
 };
 
 // =========================================================
-// ATUALIZAR ESTATÍSTICAS E FILTROS (NOVA LÓGICA DE CARDS)
+// ATUALIZAR ESTATÍSTICAS E FILTROS
 // =========================================================
 function atualizarEstatisticas() {
   const total = todasReformas.length;
 
-  // "Prontas p/ Retirada": serviço finalizado E status NÃO é "Concluído" (ainda está na loja)
-  const prontas = todasReformas.filter(
-    (o) => o.servico_finalizado && o.status !== "Concluído",
+  // Retiradas: Status = Concluído
+  const retiradas = todasReformas.filter(
+    (o) => o.status === "Concluído"
   ).length;
 
-  // "Retiradas": status é "Concluído" (o cliente já levou)
-  const retiradas = todasReformas.filter(
-    (o) => o.status === "Concluído",
+  // Prontas p/ Retirada: Finalizado e não concluído
+  const prontas = todasReformas.filter(
+    (o) => o.servico_finalizado && o.status !== "Concluído"
+  ).length;
+
+  // Em Produção: Tudo que NÃO está pronto e NÃO está concluído
+  // (Aqui entram tanto Pendentes quanto Em Andamento)
+  const producao = todasReformas.filter(
+    (o) => !o.servico_finalizado && o.status !== "Concluído"
   ).length;
 
   document.getElementById("statTotal").textContent = total;
-  document.getElementById("statRetiradas").textContent = retiradas;
+  document.getElementById("statProducao").textContent = producao;
   document.getElementById("statProntas").textContent = prontas;
+  document.getElementById("statRetiradas").textContent = retiradas;
 }
 
-// Configurando os cliques nos cards para filtrar a lista
+// Configurando os cliques nos cards para filtrar
 document.getElementById("statTotal").parentElement.onclick = () => {
   filtroAtual = "todas";
   renderizarLista();
 };
-document.getElementById("statRetiradas").parentElement.onclick = () => {
-  filtroAtual = "retiradas";
+document.getElementById("statProducao").parentElement.onclick = () => {
+  filtroAtual = "producao";
   renderizarLista();
 };
 document.getElementById("statProntas").parentElement.onclick = () => {
   filtroAtual = "prontas";
+  renderizarLista();
+};
+document.getElementById("statRetiradas").parentElement.onclick = () => {
+  filtroAtual = "retiradas";
   renderizarLista();
 };
 
@@ -394,6 +405,9 @@ function renderizarLista() {
     }
 
     // Filtros dos Cards
+    if (filtroAtual === "producao") {
+      if (os.servico_finalizado || os.status === "Concluído") return false;
+    }
     if (filtroAtual === "prontas") {
       if (!os.servico_finalizado || os.status === "Concluído") return false;
     }
@@ -411,19 +425,19 @@ function renderizarLista() {
 
   listaContainer.innerHTML = filtradas
     .map((os) => {
-      let bgStatus =
-        "bg-amber-500/20 text-amber-300 border border-amber-500/40";
+      // Definindo a cor do badge de acordo com o status
+      let bgStatus = "bg-amber-500/20 text-amber-300 border border-amber-500/40";
       if (os.status === "Em andamento")
         bgStatus = "bg-blue-500/20 text-blue-300 border border-blue-500/40";
       if (os.status === "Cancelado")
         bgStatus = "bg-rose-500/20 text-rose-300 border border-rose-500/40";
+      if (os.status === "Concluído")
+        bgStatus = "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40";
 
       let badgeHtml = `<span class="text-xs font-black px-3.5 py-1.5 rounded-xl flex-shrink-0 ${bgStatus} shadow-md uppercase tracking-wider">${os.status || "Pendente"}</span>`;
 
-      // Lógica visual dos status no card
-      if (os.status === "Concluído") {
-        badgeHtml = `<span class="text-xs font-black px-3.5 py-1.5 rounded-xl flex-shrink-0 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-md uppercase tracking-wider flex items-center gap-1.5"><i class="fa-solid fa-check-double"></i> Entregue / Retirada</span>`;
-      } else if (os.servico_finalizado) {
+      // Se estiver finalizado mas não concluído, sobrepõe o badge
+      if (os.servico_finalizado && os.status !== "Concluído") {
         badgeHtml = `<span class="text-xs font-black px-3.5 py-1.5 rounded-xl flex-shrink-0 bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 shadow-md uppercase tracking-wider flex items-center gap-1.5"><i class="fa-solid fa-circle-check"></i> Pronto p/ Retirada</span>`;
       }
 
@@ -587,17 +601,12 @@ supabaseClient
     "postgres_changes",
     { event: "*", schema: "public", table: "ordens_servico" },
     (payload) => {
-      console.log(
-        "Realtime: Mudança detectada no banco, atualizando tela...",
-        payload,
-      );
       carregarReformas();
     },
   )
   .subscribe();
 
 setInterval(() => {
-  console.log("Temporizador: atualizando lista de reformas...");
   carregarReformas();
 }, 30000);
 
