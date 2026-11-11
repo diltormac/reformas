@@ -7,8 +7,14 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=5.0"
     />
     <title>OS Fácil — Painel de Reformas</title>
+
+    <!-- Tailwind e SweetAlert -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Plugin Capacitor Camera (para abrir câmera no APK) -->
+    <script src="https://cdn.jsdelivr.net/npm/@capacitor/camera@5.0.0/dist/plugin.js"></script>
+
     <script>
       tailwind.config = {
         darkMode: "class",
@@ -209,7 +215,6 @@
       >
         <i class="fa-solid fa-xmark"></i>
       </button>
-
       <button
         onclick="navegarLightbox(event, -1)"
         id="btnPrev"
@@ -217,14 +222,12 @@
       >
         <i class="fa-solid fa-chevron-left"></i>
       </button>
-
       <img
         id="lightboxImg"
         src=""
         alt="Foto Expandida"
         onclick="event.stopPropagation()"
       />
-
       <button
         onclick="navegarLightbox(event, 1)"
         id="btnNext"
@@ -232,7 +235,6 @@
       >
         <i class="fa-solid fa-chevron-right"></i>
       </button>
-
       <div
         id="lightboxCounter"
         class="absolute bottom-6 left-1/2 -translate-x-1/2 text-white font-bold bg-slate-900/90 border border-slate-700 px-4 py-1.5 rounded-full text-xs backdrop-blur-md tracking-wider shadow-lg"
