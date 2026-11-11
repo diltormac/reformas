@@ -1,16 +1,26 @@
 {
-  "id": "./",
-  "name": "OS Fácil — Painel de Reformas",
-  "short_name": "OS Fácil",
-  "description": "Acompanhamento de serviços e reformas de rodas.",
-  "lang": "pt-BR",
+  "name": "OS Fácil Reformas",
+  "short_name": "Reformas",
+  "description": "Painel de acompanhamento de reformas de rodas",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "orientation": "any",
+  "orientation": "portrait-primary",
   "background_color": "#090d16",
   "theme_color": "#073BCE",
+  "lang": "pt-BR",
+  "dir": "ltr",
   "icons": [
+    {
+      "src": "./favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "./apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
     {
       "src": "./icon-192.png",
       "sizes": "192x192",
@@ -22,6 +32,18 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "./icon-192-maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "./icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
