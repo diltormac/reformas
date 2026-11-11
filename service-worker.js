@@ -1,70 +1,78 @@
-const CACHE_NAME = "os-facil-reformas-v1";
-const APP_SHELL = [
+/* ============================================================
+   Service Worker — OS Fácil Reformas
+   Sobe a versão do CACHE_NAME sempre que alterar HTML/CSS/JS
+   ============================================================ */
+const CACHE_NAME = "osfacil-reformas-v2";
+const CORE_ASSETS = [
   "./",
   "./index.html",
   "./manifest.json",
-  "./icon-192.png",
-  "./icon-512.png",
-  "./apple-touch-icon.png",
-  "./favicon-32x32.png",
-  "./js/reforma.js"
+  "./js/reforma.js",
 ];
 
+// Instala e pré-cacheia o essencial
 self.addEventListener("install", (event) => {
+  self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(APP_SHELL))
-      .then(() => self.skipWaiting())
+    caches
+      .open(CACHE_NAME)
+      .then((cache) => cache.addAll(CORE_ASSETS))
+      .catch((err) => console.warn("Falha no pré-cache:", err))
   );
 });
 
+// Ativa e limpa caches antigos
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys()
-      .then((keys) => Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
-      ))
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(
+          keys
+            .filter((key) => key !== CACHE_NAME)
+            .map((key) => caches.delete(key))
+        )
+      )
       .then(() => self.clients.claim())
   );
 });
 
+// Estratégia: network-first para HTML/JS, cache-first para o resto
 self.addEventListener("fetch", (event) => {
-  const request = event.request;
-  const url = new URL(request.url);
+  const req = event.request;
+  if (req.method !== "GET") return;
 
-  // Não intercepta Supabase, CDNs ou outras requisições externas.
-  if (url.origin !== self.location.origin || request.method !== "GET") return;
+  const url = new URL(req.url);
 
-  // Navegação: tenta a versão publicada e usa o cache se estiver sem conexão.
-  if (request.mode === "navigate") {
+  // Não intercepta chamadas externas (Supabase, CDNs, etc.)
+  if (url.origin !== self.location.origin) return;
+
+  // HTML e JS: network-first (sempre tenta pegar atualizado)
+  const isDoc =
+    req.destination === "document" || url.pathname.endsWith(".js");
+
+  if (isDoc) {
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          if (response && response.ok) {
-            const copy = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put("./index.html", copy));
-          }
-          return response;
+      fetch(req)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+          return res;
         })
-        .catch(async () => {
-          return (await caches.match(request)) ||
-                 (await caches.match("./index.html")) ||
-                 Response.error();
-        })
+        .catch(() => caches.match(req).then((c) => c || caches.match("./index.html")))
     );
     return;
   }
 
-  // Arquivos locais: tenta a rede, atualiza o cache e usa o cache offline se necessário.
+  // Demais assets: cache-first
   event.respondWith(
-    fetch(request)
-      .then((response) => {
-        if (response && response.ok) {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
-        }
-        return response;
-      })
-      .catch(async () => (await caches.match(request)) || Response.error())
+    caches.match(req).then((cached) => {
+      if (cached) return cached;
+      return fetch(req).then((res) => {
+        const copy = res.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+        return res;
+      });
+    })
   );
 });
