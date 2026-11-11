@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover"
+      content="width=device-width, initial-scale=1.0, maximum-scale=5.0"
     />
     <title>OS Fácil — Painel de Reformas</title>
 
@@ -38,16 +38,10 @@
       rel="stylesheet"
     />
     <style>
-      html,
-      body {
-        height: 100%;
-        margin: 0;
-      }
       body {
         font-family: "Inter", sans-serif;
         background: #090d16;
         color: #f8fafc;
-        overflow: hidden;
       }
       ::-webkit-scrollbar {
         width: 6px;
@@ -86,19 +80,6 @@
         border: 1px solid rgba(255, 255, 255, 0.1);
       }
     </style>
-
-    <!-- PWA: instalação e ícones -->
-    <link rel="manifest" href="./manifest.json" />
-    <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32x32.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png" />
-    <meta name="theme-color" content="#073BCE" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-title" content="OS Fácil Reformas" />
-    <meta
-      name="apple-mobile-web-app-status-bar-style"
-      content="black-translucent"
-    />
   </head>
   <body class="h-screen flex flex-col overflow-hidden">
     <!-- HEADER -->
@@ -138,7 +119,7 @@
         <!-- CARDS RESUMO -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div
-            class="bg-darkcard/80 backdrop-blur-sm p-4 rounded-2xl border border-darkborder shadow-xl hover:border-slate-700 transition cursor-pointer"
+            class="bg-darkcard/80 backdrop-blur-sm p-4 rounded-2xl border border-darkborder shadow-xl hover:border-slate-700 transition"
           >
             <p
               class="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider"
@@ -153,7 +134,7 @@
             </p>
           </div>
           <div
-            class="bg-darkcard/80 backdrop-blur-sm p-4 rounded-2xl border border-amber-500/30 shadow-xl hover:border-amber-500/50 transition cursor-pointer"
+            class="bg-darkcard/80 backdrop-blur-sm p-4 rounded-2xl border border-amber-500/30 shadow-xl hover:border-amber-500/50 transition"
           >
             <p
               class="text-[11px] font-extrabold text-amber-400 uppercase tracking-wider"
@@ -168,7 +149,7 @@
             </p>
           </div>
           <div
-            class="bg-darkcard/80 backdrop-blur-sm p-4 rounded-2xl border border-blue-500/30 shadow-xl hover:border-blue-500/50 transition cursor-pointer"
+            class="bg-darkcard/80 backdrop-blur-sm p-4 rounded-2xl border border-blue-500/30 shadow-xl hover:border-blue-500/50 transition"
           >
             <p
               class="text-[11px] font-extrabold text-blue-400 uppercase tracking-wider"
@@ -183,7 +164,7 @@
             </p>
           </div>
           <div
-            class="bg-darkcard/80 backdrop-blur-sm p-4 rounded-2xl border border-emerald-500/30 shadow-xl hover:border-emerald-500/50 transition cursor-pointer"
+            class="bg-darkcard/80 backdrop-blur-sm p-4 rounded-2xl border border-emerald-500/30 shadow-xl hover:border-emerald-500/50 transition"
           >
             <p
               class="text-[11px] font-extrabold text-emerald-400 uppercase tracking-wider"
@@ -264,18 +245,6 @@
 
     <!-- SCRIPTS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Carrega o seu script de reformas que já está funcionando -->
-    <script src="js/reforma.js"></script>
-
-    <!-- Registro do Service Worker (PWA) -->
-    <script>
-      if ("serviceWorker" in navigator) {
-        window.addEventListener("load", () => {
-          navigator.serviceWorker
-            .register("./service-worker.js")
-            .catch((error) => console.error("Falha ao registrar PWA:", error));
-        });
-      }
-    </script>
+    <script type="module" src="js/reforma.js"></script>
   </body>
 </html>
