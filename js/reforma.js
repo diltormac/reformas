@@ -128,7 +128,7 @@ async function carregarReformas() {
 }
 
 // =========================================================
-// ADICIONAR NOVA FOTO (CORRIGIDO)
+// ADICIONAR NOVA FOTO
 // =========================================================
 window.adicionarNovaFoto = async function (id, fotosAtuaisString) {
   const arquivo = await capturarFoto();
@@ -146,7 +146,6 @@ window.adicionarNovaFoto = async function (id, fotosAtuaisString) {
   try {
     const nomeArquivo = `reforma_${id}_${Date.now()}.jpg`;
 
-    // Upload com barra de progresso
     const { error: uploadError } = await supabaseClient.storage
       .from(BUCKET)
       .upload(nomeArquivo, arquivo, {
@@ -162,7 +161,6 @@ window.adicionarNovaFoto = async function (id, fotosAtuaisString) {
       .getPublicUrl(nomeArquivo);
     const novaUrl = urlData.publicUrl;
 
-    // CORREÇÃO: Tratamento robusto para ler o array antigo
     let fotosAntigas = [];
     try {
       const parsed = JSON.parse(fotosAtuaisString);
@@ -172,7 +170,6 @@ window.adicionarNovaFoto = async function (id, fotosAtuaisString) {
         fotosAntigas = [parsed];
       }
     } catch (e) {
-      // Se falhar, tenta usar a string direto se for um link válido
       if (fotosAtuaisString && fotosAtuaisString.startsWith("http")) {
         fotosAntigas = [fotosAtuaisString];
       }
@@ -187,7 +184,6 @@ window.adicionarNovaFoto = async function (id, fotosAtuaisString) {
 
     if (updateError) throw updateError;
 
-    // Atualiza localmente e re-renderiza
     const reforma = todasReformas.find((r) => r.id === id);
     if (reforma) reforma.fotos_urls = fotosNovas;
 
@@ -582,4 +578,31 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") fecharLightbox();
 });
 
+// =========================================================
+// ATUALIZAÇÃO AUTOMÁTICA (REALTIME + TEMPORIZADOR)
+// =========================================================
+
+// 1. Escuta mudanças em tempo real no Supabase
+supabaseClient
+  .channel("public:ordens_servico_reforma")
+  .on(
+    "postgres_changes",
+    { event: "*", schema: "public", table: "ordens_servico" },
+    (payload) => {
+      console.log(
+        "Realtime: Mudança detectada no banco, atualizando tela...",
+        payload,
+      );
+      carregarReformas();
+    },
+  )
+  .subscribe();
+
+// 2. Temporizador de segurança (atualiza a cada 30 segundos)
+setInterval(() => {
+  console.log("Temporizador: atualizando lista de reformas...");
+  carregarReformas();
+}, 30000);
+
+// Inicia a tela
 carregarReformas();
