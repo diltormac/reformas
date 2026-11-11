@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=5.0"
+    />
+    <title>OS Fácil — Painel de Reformas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        background: #f3f5f9;
+      }
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 8px;
+      }
+
+      /* Estilo do Lightbox (Modal de Imagem) */
+      .lightbox {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: rgba(0, 0, 0, 0.9);
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+      .lightbox.active {
+        display: flex;
+        opacity: 1;
+      }
+      .lightbox img {
+        max-width: 90%;
+        max-height: 85vh;
+        object-fit: contain;
+        border-radius: 8px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      }
+    </style>
+  </head>
+  <body class="h-screen flex flex-col overflow-hidden">
+    <!-- HEADER -->
+    <header
+      class="bg-slate-900 text-white px-4 py-3 flex items-center justify-between shadow-md flex-shrink-0"
+    >
+      <div class="flex items-center gap-3">
+        <div
+          class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center"
+        >
+          <i class="fa-solid fa-paint-roller text-lg"></i>
+        </div>
+        <div>
+          <h1 class="font-extrabold text-base leading-none">
+            Painel de Reformas
+          </h1>
+          <p class="text-[10px] text-slate-400 mt-1 uppercase tracking-wider">
+            Acompanhamento das Rodas
+          </p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button
+          onclick="window.location.href = 'index.html'"
+          class="text-xs font-semibold bg-white/10 hover:bg-white/20 px-3 py-2 rounded-lg transition"
+        >
+          <i class="fa-solid fa-arrow-left mr-1"></i> Painel Geral
+        </button>
+      </div>
+    </header>
+
+    <!-- MAIN -->
+    <main class="flex-1 overflow-y-auto p-4 sm:p-6">
+      <div class="max-w-7xl mx-auto space-y-4">
+        <!-- CARDS RESUMO -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div
+            class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm"
+          >
+            <p
+              class="text-[10px] font-bold text-slate-500 uppercase tracking-wider"
+            >
+              Total de Reformas
+            </p>
+            <p
+              class="text-2xl font-extrabold text-slate-800 mt-1"
+              id="statTotal"
+            >
+              0
+            </p>
+          </div>
+          <div
+            class="bg-amber-50 p-4 rounded-xl border border-amber-200 shadow-sm"
+          >
+            <p
+              class="text-[10px] font-bold text-amber-700 uppercase tracking-wider"
+            >
+              Pendentes
+            </p>
+            <p
+              class="text-2xl font-extrabold text-amber-800 mt-1"
+              id="statPendente"
+            >
+              0
+            </p>
+          </div>
+          <div
+            class="bg-blue-50 p-4 rounded-xl border border-blue-200 shadow-sm"
+          >
+            <p
+              class="text-[10px] font-bold text-blue-700 uppercase tracking-wider"
+            >
+              Em Andamento
+            </p>
+            <p
+              class="text-2xl font-extrabold text-blue-800 mt-1"
+              id="statAndamento"
+            >
+              0
+            </p>
+          </div>
+          <div
+            class="bg-green-50 p-4 rounded-xl border border-green-200 shadow-sm"
+          >
+            <p
+              class="text-[10px] font-bold text-green-700 uppercase tracking-wider"
+            >
+              Concluídas
+            </p>
+            <p
+              class="text-2xl font-extrabold text-green-800 mt-1"
+              id="statConcluido"
+            >
+              0
+            </p>
+          </div>
+        </div>
+
+        <!-- BARRA DE BUSCA -->
+        <div
+          class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3"
+        >
+          <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
+          <input
+            id="inputBusca"
+            type="text"
+            placeholder="Buscar por Nº da OS, cliente ou cor..."
+            class="w-full bg-transparent border-none outline-none text-sm text-slate-700 placeholder:text-slate-400"
+          />
+        </div>
+
+        <!-- LISTA DE REFORMAS (Agora com 2 colunas no PC e 1 no tablet/celular) -->
+        <div id="listaReformas" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div class="col-span-full py-10 text-center text-slate-500">
+            <i class="fa-solid fa-spinner fa-spin text-2xl mb-2"></i>
+            <p>Buscando reformas no banco...</p>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- LIGHTBOX (MODAL DE IMAGEM EXPANDIDA) -->
+    <div id="lightbox" class="lightbox" onclick="fecharLightbox(event)">
+      <button
+        onclick="fecharLightbox(event)"
+        class="absolute top-6 right-6 text-white/70 hover:text-white text-3xl z-50 transition-colors"
+      >
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <button
+        onclick="navegarLightbox(event, -1)"
+        id="btnPrev"
+        class="absolute left-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white text-xl z-50 transition-colors backdrop-blur-sm"
+      >
+        <i class="fa-solid fa-chevron-left"></i>
+      </button>
+
+      <img
+        id="lightboxImg"
+        src=""
+        alt="Foto Expandida"
+        onclick="event.stopPropagation()"
+      />
+
+      <button
+        onclick="navegarLightbox(event, 1)"
+        id="btnNext"
+        class="absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white text-xl z-50 transition-colors backdrop-blur-sm"
+      >
+        <i class="fa-solid fa-chevron-right"></i>
+      </button>
+
+      <div
+        id="lightboxCounter"
+        class="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/80 font-bold bg-black/50 px-3 py-1 rounded-full text-sm"
+      >
+        1 / 1
+      </div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="module" src="js/reforma.js"></script>
+  </body>
+</html>
