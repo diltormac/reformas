@@ -77,12 +77,92 @@
         opacity: 1;
       }
       .lightbox img {
-        max-width: 92%;
+        max-width: 96%;
         max-height: 92vh;
         object-fit: contain;
         border-radius: 6px;
         box-shadow: 0 25px 50px rgba(0, 0, 0, 0.9);
         border: 1px solid #1e293b;
+      }
+
+      /* ====== MINIATURA RESPONSIVA ====== */
+      .thumb-wrap {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #0b0f1a;
+        border: 1px solid #1a233a;
+        cursor: pointer;
+      }
+      .thumb-wrap img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        transition: transform 0.3s ease;
+      }
+      .thumb-wrap:hover img {
+        transform: scale(1.05);
+      }
+      .thumb-empty {
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        border-radius: 8px;
+        background: #0b0f1a;
+        border: 1px dashed #1a233a;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #64748b;
+        gap: 6px;
+        font-size: 11px;
+      }
+
+      /* ====== NÚMERO DA OS EM DESTAQUE ====== */
+      .os-numero {
+        font-size: 1.5rem; /* 24px no celular */
+        font-weight: 700;
+        letter-spacing: 0.02em;
+      }
+      @media (min-width: 768px) {
+        .os-numero {
+          font-size: 1.75rem; /* 28px no desktop */
+        }
+      }
+
+      /* ====== MODO CARD NO CELULAR ====== */
+      @media (max-width: 768px) {
+        /* Esconde cabeçalho de tabela */
+        thead {
+          display: none;
+        }
+        /* Cada linha vira um card */
+        tbody tr {
+          display: block;
+          margin: 10px;
+          border: 1px solid #1a233a;
+          border-radius: 10px;
+          background: #0b0f1a;
+          overflow: hidden;
+        }
+        tbody td {
+          display: block;
+          width: 100% !important;
+          padding: 8px 12px !important;
+          text-align: left !important;
+          border: none;
+        }
+        /* A célula da foto ocupa destaque no topo */
+        tbody td:first-child {
+          padding: 0 !important;
+        }
+        /* Esconde "Ampliar" no hover em touch */
+        .thumb-wrap .overlay-hint {
+          opacity: 0;
+        }
       }
     </style>
 
@@ -206,7 +286,7 @@
           >
             <tr>
               <th class="p-3 w-52 text-center">Foto Grande (Destaque)</th>
-              <th class="p-3 w-24">OS Nº</th>
+              <th class="p-3 w-32">OS Nº</th>
               <th class="p-3">Cliente</th>
               <th class="p-3 w-40">Acabamento / Cor</th>
               <th class="p-3 w-32 text-center">Status</th>

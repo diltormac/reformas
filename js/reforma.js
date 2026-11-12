@@ -317,7 +317,7 @@ window.definirFiltro = function (tipo) {
 };
 
 // =========================================================
-// RENDERIZAR TABELA (COM MINIATURA BEM GRANDE)
+// RENDERIZAR LISTA (RESPONSIVO — CARD NO MOBILE)
 // =========================================================
 function renderizarLista() {
   const termo = inputBusca.value.trim().toLowerCase();
@@ -376,36 +376,74 @@ function renderizarLista() {
       let acoesHtml = "";
       if (os.status !== "Concluído") {
         if (!os.servico_finalizado) {
-          acoesHtml = `<button onclick="marcarServicoFinalizado('${os.id}', '${os.numero_os || ""}')" class="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white text-[11px] rounded mono transition">Finalizar</button>`;
+          acoesHtml = `<button onclick="marcarServicoFinalizado('${os.id}', '${os.numero_os || ""}')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[11px] rounded mono transition flex-1 sm:flex-none">Finalizar</button>`;
         } else {
-          acoesHtml = `<div class="flex items-center justify-end gap-1"><span class="text-[10px] text-emerald-400 mono">Aguardando</span><button onclick="reabrirServico('${os.id}', '${os.numero_os || ""}')" class="p-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[11px]" title="Reabrir"><i class="fa-solid fa-lock-open"></i></button></div>`;
+          acoesHtml = `<div class="flex items-center justify-end gap-2 flex-1 sm:flex-none"><span class="text-[10px] text-emerald-400 mono">Aguardando</span><button onclick="reabrirServico('${os.id}', '${os.numero_os || ""}')" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[11px]" title="Reabrir"><i class="fa-solid fa-lock-open"></i></button></div>`;
         }
       }
 
+      const dataFmt = new Date(os.created_at).toLocaleDateString("pt-BR");
+
       return `
-        <tr class="hover:bg-panelborder/30 transition">
+        <tr class="hover:bg-panelborder/30 transition align-top">
+          <!-- FOTO (no mobile vira banner grande no topo) -->
           <td class="p-3 text-center">
             ${
               fotoUrl
-                ? `<div class="w-48 h-36 rounded-lg bg-slate-900 overflow-hidden mx-auto cursor-pointer border border-panelborder group relative shadow-lg" onclick="abrirLightbox('${fotosString}', 0)">
-                   <img src="${fotoUrl}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" loading="lazy">
-                   <div class="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                ? `<div class="thumb-wrap mx-auto" onclick="abrirLightbox('${fotosString}', 0)">
+                   <img src="${fotoUrl}" alt="Foto OS ${os.numero_os || ""}" loading="lazy">
+                   <div class="overlay-hint absolute inset-0 bg-slate-950/40 opacity-0 hover:opacity-100 transition flex items-center justify-center">
                      <span class="text-white text-xs font-semibold drop-shadow"><i class="fa-solid fa-magnifying-glass-plus mr-1"></i> Ampliar</span>
                    </div>
-                   ${fotosArray.length > 1 ? `<span class="absolute bottom-1.5 right-1.5 bg-slate-900/90 text-white text-[10px] px-2 py-0.5 rounded mono border border-slate-700">+${fotosArray.length - 1} fotos</span>` : ""}
+                   ${
+                     fotosArray.length > 1
+                       ? `<span class="absolute bottom-2 right-2 bg-slate-900/90 text-white text-[10px] px-2 py-0.5 rounded mono border border-slate-700">+${fotosArray.length - 1} fotos</span>`
+                       : ""
+                   }
                  </div>`
-                : `<div class="w-48 h-36 rounded-lg bg-darkbase border border-dashed border-panelborder mx-auto flex flex-col items-center justify-center text-slate-500 text-xs gap-1.5">
+                : `<div class="thumb-empty mx-auto">
                    <i class="fa-regular fa-image text-xl text-slate-600"></i>
                    <span>Sem foto</span>
                  </div>`
             }
           </td>
-          <td class="p-3 mono font-bold text-white text-sm">${os.numero_os || "S/N"}</td>
-          <td class="p-3 font-semibold text-slate-200 truncate max-w-[200px]" title="${os.nome || "Sem nome"}">${os.nome || "Sem nome"}</td>
-          <td class="p-3 text-slate-300 mono text-xs">${os.cor || "—"}</td>
-          <td class="p-3 text-center">${badgeStatus}</td>
-          <td class="p-3 text-center mono text-slate-400 text-xs">${new Date(os.created_at).toLocaleDateString("pt-BR")}</td>
-          <td class="p-3 text-right">
+
+          <!-- OS — NÚMERO EM DESTAQUE -->
+          <td class="p-3">
+            <span class="sm:hidden text-[10px] text-slate-500 block font-normal mb-1 mono">OS</span>
+            <div class="inline-flex items-center gap-2 bg-blue-600/10 border border-blue-500/30 rounded-lg px-3 py-1.5">
+              <span class="text-[10px] mono text-blue-400 uppercase tracking-widest hidden sm:inline">OS</span>
+              <span class="os-numero mono font-bold text-blue-300 leading-none">${os.numero_os || "S/N"}</span>
+            </div>
+          </td>
+
+          <!-- CLIENTE -->
+          <td class="p-3 font-semibold text-slate-200">
+            <span class="sm:hidden text-[10px] text-slate-500 block font-normal">Cliente</span>
+            <span class="truncate block max-w-[200px]" title="${os.nome || "Sem nome"}">${os.nome || "Sem nome"}</span>
+          </td>
+
+          <!-- COR -->
+          <td class="p-3 text-slate-300 mono text-xs">
+            <span class="sm:hidden text-[10px] text-slate-500 block font-normal">Cor</span>
+            ${os.cor || "—"}
+          </td>
+
+          <!-- STATUS -->
+          <td class="p-3 text-center">
+            <span class="sm:hidden text-[10px] text-slate-500 block font-normal mb-1">Status</span>
+            ${badgeStatus}
+          </td>
+
+          <!-- DATA -->
+          <td class="p-3 text-center mono text-slate-400 text-xs">
+            <span class="sm:hidden text-[10px] text-slate-500 block font-normal">Data</span>
+            ${dataFmt}
+          </td>
+
+          <!-- AÇÕES -->
+          <td class="p-3 sm:text-right">
+            <span class="sm:hidden text-[10px] text-slate-500 block font-normal mb-1">Ações</span>
             <div class="flex items-center justify-end gap-2">
               <button onclick="adicionarNovaFoto('${os.id}', '${fotosString}')" class="p-2 bg-darkbase hover:bg-slate-800 text-slate-300 rounded border border-panelborder transition text-xs" title="Adicionar Foto"><i class="fa-solid fa-camera"></i></button>
               ${acoesHtml}
