@@ -27,7 +27,7 @@ function comprimirImagem(file) {
       img.src = event.target.result;
       img.onload = () => {
         const canvas = document.createElement("canvas");
-        const MAX = 1280; // Aumentado um pouco para dar mais nitidez na miniatura grande
+        const MAX = 1024;
         let width = img.width;
         let height = img.height;
         if (width > height && width > MAX) {
@@ -49,7 +49,7 @@ function comprimirImagem(file) {
               }),
             ),
           "image/jpeg",
-          0.75,
+          0.7,
         );
       };
       img.onerror = reject;
@@ -66,7 +66,7 @@ async function capturarFoto() {
   ) {
     try {
       const image = await window.Camera.getPhoto({
-        quality: 80,
+        quality: 70,
         allowEditing: false,
         resultType: "dataUrl",
         source: "CAMERA",
@@ -123,7 +123,7 @@ async function carregarReformas() {
     renderizarLista();
   } catch (error) {
     console.error("Erro ao carregar:", error);
-    listaContainer.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-red-400 mono">Erro ao carregar registros do servidor.</td></tr>`;
+    listaContainer.innerHTML = `<div class="col-span-full py-12 text-center text-red-400 bg-red-950/40 rounded-2xl border border-red-500/30 shadow-xl p-6"><i class="fa-solid fa-triangle-exclamation text-3xl mb-3"></i><p class="font-extrabold">Erro ao carregar as reformas.</p></div>`;
   }
 }
 
@@ -132,19 +132,20 @@ async function carregarReformas() {
 // =========================================================
 window.adicionarNovaFoto = async function (id, fotosAtuaisString) {
   const arquivo = await capturarFoto();
-  if (!arquivo) return;
+  if (!arquivo) return; // cancelou
 
   Swal.fire({
-    title: "Enviando...",
-    text: "Salvando imagem...",
+    title: "Enviando foto...",
+    html: '<div class="text-sm font-semibold text-slate-300" id="progressoTexto">Preparando...</div><div class="w-full bg-slate-800 rounded-full h-2.5 mt-3"><div id="barraProgresso" class="bg-indigo-500 h-2.5 rounded-full" style="width: 0%"></div></div>',
     allowOutsideClick: false,
     showConfirmButton: false,
-    background: "#0e1320",
-    color: "#cbd5e1",
+    background: "#111827",
+    color: "#f8fafc",
   });
 
   try {
     const nomeArquivo = `reforma_${id}_${Date.now()}.jpg`;
+
     const { error: uploadError } = await supabaseClient.storage
       .from(BUCKET)
       .upload(nomeArquivo, arquivo, {
@@ -163,14 +164,19 @@ window.adicionarNovaFoto = async function (id, fotosAtuaisString) {
     let fotosAntigas = [];
     try {
       const parsed = JSON.parse(fotosAtuaisString);
-      if (Array.isArray(parsed)) fotosAntigas = parsed;
-      else if (typeof parsed === "string") fotosAntigas = [parsed];
-    } catch {
-      if (fotosAtuaisString && fotosAtuaisString.startsWith("http"))
+      if (Array.isArray(parsed)) {
+        fotosAntigas = parsed;
+      } else if (typeof parsed === "string") {
+        fotosAntigas = [parsed];
+      }
+    } catch (e) {
+      if (fotosAtuaisString && fotosAtuaisString.startsWith("http")) {
         fotosAntigas = [fotosAtuaisString];
+      }
     }
 
     const fotosNovas = [...fotosAntigas, novaUrl];
+
     const { error: updateError } = await supabaseClient
       .from("ordens_servico")
       .update({ fotos_urls: fotosNovas })
@@ -185,139 +191,200 @@ window.adicionarNovaFoto = async function (id, fotosAtuaisString) {
     renderizarLista();
     Swal.fire({
       icon: "success",
-      title: "Sucesso",
-      text: "Foto adicionada.",
-      background: "#0e1320",
-      color: "#cbd5e1",
-      timer: 1200,
-      showConfirmButton: false,
+      title: "Foto Adicionada!",
+      text: "A nova imagem foi salva com sucesso.",
+      background: "#111827",
+      color: "#f8fafc",
+      confirmButtonColor: "#10b981",
+    });
+  } catch (error) {
+    console.error("Erro ao adicionar foto:", error);
+    Swal.fire({
+      icon: "error",
+      title: "Erro ao salvar",
+      text:
+        error.message ||
+        "Não foi possível adicionar a foto. Verifique as permissões do Supabase.",
+      background: "#111827",
+      color: "#f8fafc",
+      confirmButtonColor: "#ef4444",
+    });
+  }
+};
+
+// =========================================================
+// MARCAR SERVIÇO COMO FINALIZADO (COM SENHA)
+// =========================================================
+window.marcarServicoFinalizado = async function (id, numeroOs, cliente) {
+  const { value: senha } = await Swal.fire({
+    title: "Confirmar Senha",
+    text: `Digite a senha para finalizar o serviço da OS Nº ${numeroOs || "S/N"}`,
+    input: "password",
+    inputPlaceholder: "Digite a senha...",
+    icon: "lock",
+    background: "#111827",
+    color: "#f8fafc",
+    confirmButtonColor: "#10b981",
+    cancelButtonColor: "#334155",
+    confirmButtonText: "Confirmar",
+    cancelButtonText: "Cancelar",
+    showCancelButton: true,
+  });
+
+  if (!senha) return;
+
+  if (senha !== SENHA_MESTRA) {
+    Swal.fire({
+      icon: "error",
+      title: "Senha Incorreta",
+      text: "A senha digitada está errada.",
+      background: "#111827",
+      color: "#f8fafc",
+      confirmButtonColor: "#ef4444",
+    });
+    return;
+  }
+
+  try {
+    const { error } = await supabaseClient
+      .from("ordens_servico")
+      .update({ servico_finalizado: true })
+      .eq("id", id);
+    if (error) throw error;
+
+    const reforma = todasReformas.find((r) => r.id === id);
+    if (reforma) reforma.servico_finalizado = true;
+
+    atualizarEstatisticas();
+    renderizarLista();
+
+    Swal.fire({
+      icon: "success",
+      title: "Serviço Pronto!",
+      text: "A OS está pronta para retirada.",
+      background: "#111827",
+      color: "#f8fafc",
+      confirmButtonColor: "#10b981",
     });
   } catch (error) {
     Swal.fire({
       icon: "error",
       title: "Erro",
-      text: error.message || "Falha ao enviar foto.",
-      background: "#0e1320",
-      color: "#cbd5e1",
+      text: error.message || "Não foi possível atualizar.",
+      background: "#111827",
+      color: "#f8fafc",
+      confirmButtonColor: "#ef4444",
     });
   }
 };
 
 // =========================================================
-// FINALIZAR / REABRIR SERVIÇO
+// REABRIR SERVIÇO (COM SENHA)
 // =========================================================
-window.marcarServicoFinalizado = async function (id, numeroOs) {
+window.reabrirServico = async function (id, numeroOs, cliente) {
   const { value: senha } = await Swal.fire({
-    title: "Finalizar OS",
-    text: `Senha exigida para concluir OS #${numeroOs || "S/N"}:`,
+    title: "Confirmar Senha",
+    text: `Digite a senha para reabrir a OS Nº ${numeroOs || "S/N"}`,
     input: "password",
-    inputPlaceholder: "Senha...",
-    background: "#0e1320",
-    color: "#cbd5e1",
-    confirmButtonColor: "#2563eb",
+    inputPlaceholder: "Digite a senha...",
+    icon: "lock",
+    background: "#111827",
+    color: "#f8fafc",
+    confirmButtonColor: "#f59e0b",
+    cancelButtonColor: "#334155",
+    confirmButtonText: "Reabrir",
+    cancelButtonText: "Cancelar",
     showCancelButton: true,
   });
 
   if (!senha) return;
+
   if (senha !== SENHA_MESTRA) {
     Swal.fire({
       icon: "error",
       title: "Senha Incorreta",
-      background: "#0e1320",
-      color: "#cbd5e1",
+      text: "A senha digitada está errada.",
+      background: "#111827",
+      color: "#f8fafc",
+      confirmButtonColor: "#ef4444",
     });
     return;
   }
 
-  const { error } = await supabaseClient
-    .from("ordens_servico")
-    .update({ servico_finalizado: true })
-    .eq("id", id);
-  if (!error) {
-    const r = todasReformas.find((item) => item.id === id);
-    if (r) r.servico_finalizado = true;
+  try {
+    const { error } = await supabaseClient
+      .from("ordens_servico")
+      .update({ servico_finalizado: false })
+      .eq("id", id);
+    if (error) throw error;
+
+    const reforma = todasReformas.find((r) => r.id === id);
+    if (reforma) reforma.servico_finalizado = false;
+
     atualizarEstatisticas();
     renderizarLista();
-  }
-};
 
-window.reabrirServico = async function (id, numeroOs) {
-  const { value: senha } = await Swal.fire({
-    title: "Reabrir OS",
-    text: `Senha exigida para reabrir OS #${numeroOs || "S/N"}:`,
-    input: "password",
-    inputPlaceholder: "Senha...",
-    background: "#0e1320",
-    color: "#cbd5e1",
-    confirmButtonColor: "#d97706",
-    showCancelButton: true,
-  });
-
-  if (!senha) return;
-  if (senha !== SENHA_MESTRA) {
+    Swal.fire({
+      icon: "success",
+      title: "Serviço Reaberto",
+      text: "A OS voltou para a produção.",
+      background: "#111827",
+      color: "#f8fafc",
+      confirmButtonColor: "#10b981",
+    });
+  } catch (error) {
     Swal.fire({
       icon: "error",
-      title: "Senha Incorreta",
-      background: "#0e1320",
-      color: "#cbd5e1",
+      title: "Erro",
+      text: error.message || "Não foi possível atualizar.",
+      background: "#111827",
+      color: "#f8fafc",
+      confirmButtonColor: "#ef4444",
     });
-    return;
-  }
-
-  const { error } = await supabaseClient
-    .from("ordens_servico")
-    .update({ servico_finalizado: false })
-    .eq("id", id);
-  if (!error) {
-    const r = todasReformas.find((item) => item.id === id);
-    if (r) r.servico_finalizado = false;
-    atualizarEstatisticas();
-    renderizarLista();
   }
 };
 
 // =========================================================
-// FILTROS E ESTATÍSTICAS
+// ATUALIZAR ESTATÍSTICAS E FILTROS
 // =========================================================
 function atualizarEstatisticas() {
   const total = todasReformas.length;
-  const retiradas = todasReformas.filter(
-    (o) => o.status === "Concluído",
+  const pendente = todasReformas.filter(
+    (o) => o.status === "Pendente" && !o.servico_finalizado,
   ).length;
-  const prontas = todasReformas.filter(
-    (o) => o.servico_finalizado && o.status !== "Concluído",
+  const andamento = todasReformas.filter(
+    (o) => o.status === "Em andamento" && !o.servico_finalizado,
   ).length;
-  const producao = todasReformas.filter(
-    (o) => !o.servico_finalizado && o.status !== "Concluído",
-  ).length;
+  const prontas = todasReformas.filter((o) => o.servico_finalizado).length;
 
   document.getElementById("statTotal").textContent = total;
-  document.getElementById("statProducao").textContent = producao;
+  document.getElementById("statPendente").textContent = pendente;
+  document.getElementById("statAndamento").textContent = andamento;
   document.getElementById("statProntas").textContent = prontas;
-  document.getElementById("statRetiradas").textContent = retiradas;
 }
 
-window.definirFiltro = function (tipo) {
-  filtroAtual = tipo;
-  ["todas", "producao", "prontas", "retiradas"].forEach((t) => {
-    const btn = document.getElementById(
-      `btnFiltro${t.charAt(0).toUpperCase() + t.slice(1)}`,
-    );
-    if (btn) {
-      if (t === tipo) {
-        btn.className =
-          "px-3 py-1.5 text-xs mono font-semibold rounded bg-blue-600 text-white transition";
-      } else {
-        btn.className =
-          "px-3 py-1.5 text-xs mono font-semibold rounded bg-darkbase hover:bg-slate-800 text-slate-400 border border-panelborder transition";
-      }
-    }
-  });
+document.getElementById("statTotal").parentElement.onclick = () => {
+  filtroAtual = "todas";
   renderizarLista();
 };
+document.getElementById("statPendente").parentElement.onclick = () => {
+  filtroAtual = "pendente";
+  renderizarLista();
+};
+document.getElementById("statAndamento").parentElement.onclick = () => {
+  filtroAtual = "andamento";
+  renderizarLista();
+};
+document.getElementById("statProntas").parentElement.onclick = () => {
+  filtroAtual = "prontas";
+  renderizarLista();
+};
+document
+  .querySelectorAll(".cursor-default")
+  .forEach((el) => el.classList.add("cursor-pointer"));
 
 // =========================================================
-// RENDERIZAR LISTA (RESPONSIVO — CARD NO MOBILE)
+// RENDERIZAR A LISTA
 // =========================================================
 function renderizarLista() {
   const termo = inputBusca.value.trim().toLowerCase();
@@ -328,135 +395,131 @@ function renderizarLista() {
         `${os.numero_os || ""} ${os.nome || ""} ${os.cor || ""}`.toLowerCase();
       if (!texto.includes(termo)) return false;
     }
+    if (filtroAtual === "prontas" && !os.servico_finalizado) return false;
     if (
-      filtroAtual === "producao" &&
-      (os.servico_finalizado || os.status === "Concluído")
+      filtroAtual === "pendente" &&
+      (os.servico_finalizado || os.status !== "Pendente")
     )
       return false;
     if (
-      filtroAtual === "prontas" &&
-      (!os.servico_finalizado || os.status === "Concluído")
+      filtroAtual === "andamento" &&
+      (os.servico_finalizado || os.status !== "Em andamento")
     )
       return false;
-    if (filtroAtual === "retiradas" && os.status !== "Concluído") return false;
     return true;
   });
 
   if (filtradas.length === 0) {
-    listaContainer.innerHTML = `<tr><td colspan="7" class="py-12 text-center text-slate-500 mono">Nenhum registro encontrado.</td></tr>`;
+    listaContainer.innerHTML = `<div class="col-span-full py-16 text-center text-slate-400 bg-darkcard/50 rounded-2xl border border-darkborder shadow-xl"><i class="fa-solid fa-box-open text-4xl mb-3 text-slate-500"></i><p class="font-bold text-slate-300 text-sm">Nenhuma reforma encontrada</p></div>`;
     return;
   }
 
   listaContainer.innerHTML = filtradas
     .map((os) => {
+      let bgStatus =
+        "bg-amber-500/20 text-amber-300 border border-amber-500/40";
+      if (os.status === "Em andamento")
+        bgStatus = "bg-blue-500/20 text-blue-300 border border-blue-500/40";
+      if (os.status === "Cancelado")
+        bgStatus = "bg-rose-500/20 text-rose-300 border border-rose-500/40";
+
+      let badgeHtml = `<span class="text-xs font-black px-3.5 py-1.5 rounded-xl flex-shrink-0 ${bgStatus} shadow-md uppercase tracking-wider">${os.status || "Pendente"}</span>`;
+
+      if (os.servico_finalizado) {
+        badgeHtml = `<span class="text-xs font-black px-3.5 py-1.5 rounded-xl flex-shrink-0 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-md uppercase tracking-wider flex items-center gap-1.5"><i class="fa-solid fa-circle-check"></i> Pronto p/ Retirada</span>`;
+      }
+
+      let fotoUrl = null;
       let fotosArray = [];
-      if (Array.isArray(os.fotos_urls)) fotosArray = os.fotos_urls;
-      else if (
+      if (Array.isArray(os.fotos_urls)) {
+        fotosArray = os.fotos_urls;
+      } else if (
         typeof os.fotos_urls === "string" &&
         os.fotos_urls.trim() !== ""
       ) {
         try {
-          const p = JSON.parse(os.fotos_urls);
-          fotosArray = Array.isArray(p) ? p : [os.fotos_urls];
+          const parsed = JSON.parse(os.fotos_urls);
+          if (Array.isArray(parsed)) fotosArray = parsed;
+          else fotosArray = [os.fotos_urls];
         } catch {
           fotosArray = [os.fotos_urls];
         }
       }
-      const fotoUrl = fotosArray.length > 0 ? fotosArray[0] : null;
+
+      if (fotosArray.length > 0) fotoUrl = fotosArray[0];
       const fotosString = JSON.stringify(fotosArray).replace(/"/g, "&quot;");
 
-      let badgeStatus = `<span class="px-2 py-0.5 rounded text-[10px] mono bg-amber-500/10 text-amber-400 border border-amber-500/20">${os.status || "Pendente"}</span>`;
-      if (os.status === "Em andamento")
-        badgeStatus = `<span class="px-2 py-0.5 rounded text-[10px] mono bg-blue-500/10 text-blue-400 border border-blue-500/20">Em andamento</span>`;
-      if (os.status === "Concluído")
-        badgeStatus = `<span class="px-2 py-0.5 rounded text-[10px] mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Retirado</span>`;
-      if (os.servico_finalizado && os.status !== "Concluído")
-        badgeStatus = `<span class="px-2 py-0.5 rounded text-[10px] mono bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Pronto p/ Retirada</span>`;
+      let botaoAcao = "";
+      if (!os.servico_finalizado) {
+        botaoAcao = `<button onclick="marcarServicoFinalizado('${os.id}', '${os.numero_os || ""}', '${os.nome || ""}')" class="w-full mt-3 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-emerald-900/30 transition flex items-center justify-center gap-2"><i class="fa-solid fa-lock text-sm"></i> Finalizar Serviço</button>`;
+      } else {
+        botaoAcao = `<div class="w-full mt-3 flex gap-2"><div class="flex-1 py-2 px-2 bg-emerald-950/50 border border-emerald-500/30 text-emerald-400 font-bold text-[11px] rounded-xl flex items-center justify-center gap-1.5 uppercase"><i class="fa-solid fa-thumbs-up"></i> Aguardando Cliente</div><button onclick="reabrirServico('${os.id}', '${os.numero_os || ""}', '${os.nome || ""}')" class="w-10 h-10 flex-shrink-0 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 rounded-xl flex items-center justify-center transition" title="Reabrir OS (Requer senha)"><i class="fa-solid fa-lock-open"></i></button></div>`;
+      }
 
-      let acoesHtml = "";
-      if (os.status !== "Concluído") {
-        if (!os.servico_finalizado) {
-          acoesHtml = `<button onclick="marcarServicoFinalizado('${os.id}', '${os.numero_os || ""}')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[11px] rounded mono transition flex-1 sm:flex-none">Finalizar</button>`;
-        } else {
-          acoesHtml = `<div class="flex items-center justify-end gap-2 flex-1 sm:flex-none"><span class="text-[10px] text-emerald-400 mono">Aguardando</span><button onclick="reabrirServico('${os.id}', '${os.numero_os || ""}')" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[11px]" title="Reabrir"><i class="fa-solid fa-lock-open"></i></button></div>`;
+      let avisoTempo = "";
+      if (os.servico_finalizado) {
+        const diffDias = Math.floor(
+          (new Date() - new Date(os.created_at)) / (1000 * 60 * 60 * 24),
+        );
+        if (diffDias >= 3) {
+          avisoTempo = `<div class="mt-2 text-center text-[10px] font-bold text-red-400 bg-red-950/40 py-1 rounded border border-red-500/20"><i class="fa-solid fa-clock mr-1"></i> Aguardando retirada há ${diffDias} dias</div>`;
         }
       }
 
-      const dataFmt = new Date(os.created_at).toLocaleDateString("pt-BR");
-
       return `
-        <tr class="hover:bg-panelborder/30 transition align-top">
-          <!-- FOTO (no mobile vira banner grande no topo) -->
-          <td class="p-3 text-center">
+      <div class="bg-darkcard/80 backdrop-blur-md rounded-2xl border ${os.servico_finalizado ? "border-emerald-500/50 shadow-emerald-950/50" : "border-darkborder"} shadow-2xl p-6 flex flex-col justify-between hover:border-indigo-500/50 transition duration-300">
+        <div>
+          <div class="flex justify-between items-start mb-4 gap-3">
+            <div class="min-w-0 flex-1">
+              <span class="text-[10px] font-black uppercase tracking-widest text-indigo-400 block mb-1">Ordem de Serviço</span>
+              <p class="text-5xl font-black ${os.servico_finalizado ? "text-emerald-400" : "text-indigo-300"} tracking-tight leading-none mb-2 drop-shadow-sm">${os.numero_os || "S/N"}</p>
+              <p class="text-base font-extrabold text-white tracking-wide truncate" title="${os.nome || "Sem nome"}"><i class="fa-solid fa-user text-indigo-400 mr-1.5 text-xs"></i> ${os.nome || "Sem nome"}</p>
+            </div>
+            ${badgeHtml}
+          </div>
+
+          <!-- CONTAINER DA FOTO COM O BOTÃO DE ADICIONAR -->
+          <div class="relative w-full">
             ${
               fotoUrl
-                ? `<div class="thumb-wrap mx-auto" onclick="abrirLightbox('${fotosString}', 0)">
-                   <img src="${fotoUrl}" alt="Foto OS ${os.numero_os || ""}" loading="lazy">
-                   <div class="overlay-hint absolute inset-0 bg-slate-950/40 opacity-0 hover:opacity-100 transition flex items-center justify-center">
-                     <span class="text-white text-xs font-semibold drop-shadow"><i class="fa-solid fa-magnifying-glass-plus mr-1"></i> Ampliar</span>
-                   </div>
-                   ${
-                     fotosArray.length > 1
-                       ? `<span class="absolute bottom-2 right-2 bg-slate-900/90 text-white text-[10px] px-2 py-0.5 rounded mono border border-slate-700">+${fotosArray.length - 1} fotos</span>`
-                       : ""
-                   }
-                 </div>`
-                : `<div class="thumb-empty mx-auto">
-                   <i class="fa-regular fa-image text-xl text-slate-600"></i>
-                   <span>Sem foto</span>
-                 </div>`
+                ? `<div class="w-full h-56 bg-slate-950 rounded-xl overflow-hidden mb-4 border border-darkborder cursor-pointer group shadow-inner" onclick="abrirLightbox('${fotosString}', 0)">
+                     <img src="${fotoUrl}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" alt="Foto da Roda">
+                     <div class="absolute inset-0 bg-slate-950/0 group-hover:bg-slate-950/50 transition-all duration-300 flex items-center justify-center">
+                       <div class="w-12 h-12 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 transform scale-75 group-hover:scale-100">
+                         <i class="fa-solid fa-magnifying-glass-plus text-base"></i>
+                       </div>
+                     </div>
+                   </div>`
+                : `<div class="w-full h-56 bg-slate-900/40 border border-dashed border-darkborder rounded-xl flex flex-col items-center justify-center text-slate-500 mb-4">
+                     <i class="fa-solid fa-image text-3xl mb-2 text-slate-600"></i>
+                     <span class="text-xs font-bold uppercase tracking-wider">Sem foto</span>
+                   </div>`
             }
-          </td>
+            <!-- Botão Flutuante + para adicionar nova foto -->
+            <button onclick="adicionarNovaFoto('${os.id}', '${fotosString}')" class="absolute bottom-6 right-2 w-10 h-10 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full flex items-center justify-center shadow-lg transition z-10" title="Adicionar nova foto">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+          </div>
 
-          <!-- OS — NÚMERO EM DESTAQUE -->
-          <td class="p-3">
-            <span class="sm:hidden text-[10px] text-slate-500 block font-normal mb-1 mono">OS</span>
-            <div class="inline-flex items-center gap-2 bg-blue-600/10 border border-blue-500/30 rounded-lg px-3 py-1.5">
-              <span class="text-[10px] mono text-blue-400 uppercase tracking-widest hidden sm:inline">OS</span>
-              <span class="os-numero mono font-bold text-blue-300 leading-none">${os.numero_os || "S/N"}</span>
-            </div>
-          </td>
+          <div class="space-y-2 text-sm bg-slate-900/80 p-3.5 rounded-xl border border-darkborder">
+            <p class="flex justify-between items-center"><span class="font-bold text-slate-400 uppercase text-[11px] tracking-wider">Cor:</span> <span class="font-extrabold text-white text-base">${os.cor || "Não informada"}</span></p>
+          </div>
 
-          <!-- CLIENTE -->
-          <td class="p-3 font-semibold text-slate-200">
-            <span class="sm:hidden text-[10px] text-slate-500 block font-normal">Cliente</span>
-            <span class="truncate block max-w-[200px]" title="${os.nome || "Sem nome"}">${os.nome || "Sem nome"}</span>
-          </td>
+          ${botaoAcao}
+          ${avisoTempo}
+        </div>
 
-          <!-- COR -->
-          <td class="p-3 text-slate-300 mono text-xs">
-            <span class="sm:hidden text-[10px] text-slate-500 block font-normal">Cor</span>
-            ${os.cor || "—"}
-          </td>
-
-          <!-- STATUS -->
-          <td class="p-3 text-center">
-            <span class="sm:hidden text-[10px] text-slate-500 block font-normal mb-1">Status</span>
-            ${badgeStatus}
-          </td>
-
-          <!-- DATA -->
-          <td class="p-3 text-center mono text-slate-400 text-xs">
-            <span class="sm:hidden text-[10px] text-slate-500 block font-normal">Data</span>
-            ${dataFmt}
-          </td>
-
-          <!-- AÇÕES -->
-          <td class="p-3 sm:text-right">
-            <span class="sm:hidden text-[10px] text-slate-500 block font-normal mb-1">Ações</span>
-            <div class="flex items-center justify-end gap-2">
-              <button onclick="adicionarNovaFoto('${os.id}', '${fotosString}')" class="p-2 bg-darkbase hover:bg-slate-800 text-slate-300 rounded border border-panelborder transition text-xs" title="Adicionar Foto"><i class="fa-solid fa-camera"></i></button>
-              ${acoesHtml}
-            </div>
-          </td>
-        </tr>
-      `;
+        <div class="mt-5 pt-3.5 border-t border-darkborder flex justify-end items-center text-xs text-slate-300 font-bold">
+          <span><i class="fa-regular fa-calendar mr-1.5 text-indigo-400"></i> ${new Date(os.created_at).toLocaleDateString("pt-BR")}</span>
+        </div>
+      </div>
+    `;
     })
     .join("");
 }
 
 // =========================================================
-// LIGHTBOX
+// LIGHTBOX (MODAL DE IMAGEM EXPANDIDA)
 // =========================================================
 window.abrirLightbox = function (fotosString, index) {
   const fotos = JSON.parse(fotosString);
@@ -516,21 +579,30 @@ document.addEventListener("keydown", (e) => {
 });
 
 // =========================================================
-// TEMPO REAL E ATUALIZAÇÃO
+// ATUALIZAÇÃO AUTOMÁTICA (REALTIME + TEMPORIZADOR)
 // =========================================================
+
+// 1. Escuta mudanças em tempo real no Supabase
 supabaseClient
   .channel("public:ordens_servico_reforma")
   .on(
     "postgres_changes",
     { event: "*", schema: "public", table: "ordens_servico" },
-    () => {
+    (payload) => {
+      console.log(
+        "Realtime: Mudança detectada no banco, atualizando tela...",
+        payload,
+      );
       carregarReformas();
     },
   )
   .subscribe();
 
+// 2. Temporizador de segurança (atualiza a cada 30 segundos)
 setInterval(() => {
+  console.log("Temporizador: atualizando lista de reformas...");
   carregarReformas();
 }, 30000);
 
+// Inicia a tela
 carregarReformas();
