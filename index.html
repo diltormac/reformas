@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=5.0"
+      content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover"
     />
     <title>OS Fácil — Painel de Reformas</title>
 
@@ -12,8 +12,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-    <!-- Plugin Capacitor Camera (para abrir câmera no APK) -->
+    <!-- SDK do Capacitor e Plugin da Câmera (Corrigido para não dar erro no console) -->
+    <script src="https://cdn.jsdelivr.net/npm/@capacitor/core@5.0.0/dist/capacitor.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@capacitor/camera@5.0.0/dist/plugin.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@capacitor/camera@5.0.0/dist/web.js"></script>
 
     <script>
       tailwind.config = {
@@ -38,10 +40,15 @@
       rel="stylesheet"
     />
     <style>
+      html, body {
+        height: 100%;
+        margin: 0;
+      }
       body {
         font-family: "Inter", sans-serif;
         background: #090d16;
         color: #f8fafc;
+        overflow: hidden;
       }
       ::-webkit-scrollbar {
         width: 6px;
@@ -80,34 +87,35 @@
         border: 1px solid rgba(255, 255, 255, 0.1);
       }
     </style>
+
+    <!-- PWA: instalação e ícones -->
+    <link rel="manifest" href="./manifest.json" />
+    <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32x32.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png" />
+    <meta name="theme-color" content="#073BCE" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="OS Fácil Reformas" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   </head>
   <body class="h-screen flex flex-col overflow-hidden">
     <!-- HEADER -->
-    <header
-      class="bg-darkcard/90 backdrop-blur-md border-b border-darkborder px-6 py-4 flex items-center justify-between shadow-lg flex-shrink-0 z-20"
-    >
+    <header class="bg-darkcard/90 backdrop-blur-md border-b border-darkborder px-6 py-4 flex items-center justify-between shadow-lg flex-shrink-0 z-20">
       <div class="flex items-center gap-4">
-        <div
-          class="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center shadow-lg shadow-indigo-500/30 text-white"
-        >
+        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center shadow-lg shadow-indigo-500/30 text-white">
           <i class="fa-solid fa-paint-roller text-xl"></i>
         </div>
         <div>
           <h1 class="font-black text-lg text-white tracking-wide leading-none">
             Painel de Reformas
           </h1>
-          <p
-            class="text-[11px] text-indigo-300 font-bold mt-1 uppercase tracking-widest"
-          >
+          <p class="text-[11px] text-indigo-300 font-bold mt-1 uppercase tracking-widest">
             Acompanhamento das Rodas
           </p>
         </div>
       </div>
       <div class="flex items-center gap-3">
-        <button
-          onclick="window.location.href = 'index.html'"
-          class="text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-100 px-4 py-2.5 rounded-xl transition border border-slate-700 flex items-center gap-2 shadow-sm"
-        >
+        <button onclick="window.location.href = 'index.html'" class="text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-100 px-4 py-2.5 rounded-xl transition border border-slate-700 flex items-center gap-2 shadow-sm">
           <i class="fa-solid fa-arrow-left text-indigo-400"></i> Painel Geral
         </button>
       </div>
@@ -116,91 +124,44 @@
     <!-- MAIN -->
     <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
       <div class="max-w-7xl mx-auto space-y-6">
-        <!-- CARDS RESUMO -->
+        
+        <!-- CARDS RESUMO (4 CARDS) -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div
-            class="bg-darkcard/80 backdrop-blur-sm p-4 rounded-2xl border border-darkborder shadow-xl hover:border-slate-700 transition"
-          >
-            <p
-              class="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider"
-            >
-              Total de Reformas
-            </p>
-            <p
-              class="text-3xl font-black text-white mt-2 tracking-tight"
-              id="statTotal"
-            >
-              0
-            </p>
+          <!-- Card 1: Total -->
+          <div class="bg-darkcard/80 backdrop-blur-sm p-4 rounded-2xl border border-darkborder shadow-xl hover:border-slate-700 transition cursor-pointer">
+            <p class="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Total de Reformas</p>
+            <p class="text-3xl font-black text-white mt-2 tracking-tight" id="statTotal">0</p>
           </div>
-          <div
-            class="bg-darkcard/80 backdrop-blur-sm p-4 rounded-2xl border border-amber-500/30 shadow-xl hover:border-amber-500/50 transition"
-          >
-            <p
-              class="text-[11px] font-extrabold text-amber-400 uppercase tracking-wider"
-            >
-              Pendentes
-            </p>
-            <p
-              class="text-3xl font-black text-amber-300 mt-2 tracking-tight"
-              id="statPendente"
-            >
-              0
-            </p>
+
+          <!-- Card 2: Em Produção (Pendentes + Em Andamento) -->
+          <div class="bg-darkcard/80 backdrop-blur-sm p-4 rounded-2xl border border-amber-500/30 shadow-xl hover:border-amber-500/50 transition cursor-pointer">
+            <p class="text-[11px] font-extrabold text-amber-400 uppercase tracking-wider">Em Produção</p>
+            <p class="text-3xl font-black text-amber-300 mt-2 tracking-tight" id="statProducao">0</p>
           </div>
-          <div
-            class="bg-darkcard/80 backdrop-blur-sm p-4 rounded-2xl border border-blue-500/30 shadow-xl hover:border-blue-500/50 transition"
-          >
-            <p
-              class="text-[11px] font-extrabold text-blue-400 uppercase tracking-wider"
-            >
-              Em Andamento
-            </p>
-            <p
-              class="text-3xl font-black text-blue-300 mt-2 tracking-tight"
-              id="statAndamento"
-            >
-              0
-            </p>
+
+          <!-- Card 3: Prontas p/ Retirada -->
+          <div class="bg-darkcard/80 backdrop-blur-sm p-4 rounded-2xl border border-blue-500/30 shadow-xl hover:border-blue-500/50 transition cursor-pointer">
+            <p class="text-[11px] font-extrabold text-blue-400 uppercase tracking-wider">Prontas p/ Retirada</p>
+            <p class="text-3xl font-black text-blue-300 mt-2 tracking-tight" id="statProntas">0</p>
           </div>
-          <div
-            class="bg-darkcard/80 backdrop-blur-sm p-4 rounded-2xl border border-emerald-500/30 shadow-xl hover:border-emerald-500/50 transition"
-          >
-            <p
-              class="text-[11px] font-extrabold text-emerald-400 uppercase tracking-wider"
-            >
-              Prontas p/ Retirada
-            </p>
-            <p
-              class="text-3xl font-black text-emerald-300 mt-2 tracking-tight"
-              id="statProntas"
-            >
-              0
-            </p>
+
+          <!-- Card 4: Retiradas -->
+          <div class="bg-darkcard/80 backdrop-blur-sm p-4 rounded-2xl border border-emerald-500/30 shadow-xl hover:border-emerald-500/50 transition cursor-pointer">
+            <p class="text-[11px] font-extrabold text-emerald-400 uppercase tracking-wider">Retiradas</p>
+            <p class="text-3xl font-black text-emerald-300 mt-2 tracking-tight" id="statRetiradas">0</p>
           </div>
         </div>
 
         <!-- BARRA DE BUSCA -->
-        <div
-          class="bg-darkcard/90 backdrop-blur-md p-3.5 rounded-2xl border border-darkborder shadow-lg flex items-center gap-3 focus-within:border-indigo-500 transition-colors"
-        >
-          <i
-            class="fa-solid fa-magnifying-glass text-indigo-400 pl-2 text-base"
-          ></i>
-          <input
-            id="inputBusca"
-            type="text"
-            placeholder="Buscar por Nº da OS, cliente ou cor..."
-            class="w-full bg-transparent border-none outline-none text-sm font-semibold text-white placeholder:text-slate-500"
-          />
+        <div class="bg-darkcard/90 backdrop-blur-md p-3.5 rounded-2xl border border-darkborder shadow-lg flex items-center gap-3 focus-within:border-indigo-500 transition-colors">
+          <i class="fa-solid fa-magnifying-glass text-indigo-400 pl-2 text-base"></i>
+          <input id="inputBusca" type="text" placeholder="Buscar por Nº da OS, cliente ou cor..." class="w-full bg-transparent border-none outline-none text-sm font-semibold text-white placeholder:text-slate-500" />
         </div>
 
         <!-- LISTA DE REFORMAS -->
         <div id="listaReformas" class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div class="col-span-full py-16 text-center text-slate-400">
-            <i
-              class="fa-solid fa-spinner fa-spin text-3xl mb-3 text-indigo-500"
-            ></i>
+            <i class="fa-solid fa-spinner fa-spin text-3xl mb-3 text-indigo-500"></i>
             <p class="text-sm font-bold">Buscando reformas no banco...</p>
           </div>
         </div>
@@ -209,42 +170,35 @@
 
     <!-- LIGHTBOX (MODAL DE IMAGEM EXPANDIDA) -->
     <div id="lightbox" class="lightbox" onclick="fecharLightbox(event)">
-      <button
-        onclick="fecharLightbox(event)"
-        class="absolute top-6 right-6 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white/90 hover:text-white text-xl z-50 transition-colors backdrop-blur-md"
-      >
+      <button onclick="fecharLightbox(event)" class="absolute top-6 right-6 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white/90 hover:text-white text-xl z-50 transition-colors backdrop-blur-md">
         <i class="fa-solid fa-xmark"></i>
       </button>
-      <button
-        onclick="navegarLightbox(event, -1)"
-        id="btnPrev"
-        class="absolute left-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white text-xl z-50 transition-colors backdrop-blur-md"
-      >
+      <button onclick="navegarLightbox(event, -1)" id="btnPrev" class="absolute left-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white text-xl z-50 transition-colors backdrop-blur-md">
         <i class="fa-solid fa-chevron-left"></i>
       </button>
-      <img
-        id="lightboxImg"
-        src=""
-        alt="Foto Expandida"
-        onclick="event.stopPropagation()"
-      />
-      <button
-        onclick="navegarLightbox(event, 1)"
-        id="btnNext"
-        class="absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white text-xl z-50 transition-colors backdrop-blur-md"
-      >
+      <img id="lightboxImg" src="" alt="Foto Expandida" onclick="event.stopPropagation()" />
+      <button onclick="navegarLightbox(event, 1)" id="btnNext" class="absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white text-xl z-50 transition-colors backdrop-blur-md">
         <i class="fa-solid fa-chevron-right"></i>
       </button>
-      <div
-        id="lightboxCounter"
-        class="absolute bottom-6 left-1/2 -translate-x-1/2 text-white font-bold bg-slate-900/90 border border-slate-700 px-4 py-1.5 rounded-full text-xs backdrop-blur-md tracking-wider shadow-lg"
-      >
+      <div id="lightboxCounter" class="absolute bottom-6 left-1/2 -translate-x-1/2 text-white font-bold bg-slate-900/90 border border-slate-700 px-4 py-1.5 rounded-full text-xs backdrop-blur-md tracking-wider shadow-lg">
         1 / 1
       </div>
     </div>
 
     <!-- SCRIPTS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="js/reforma.js"></script>
+    <!-- Carrega o script de reformas -->
+    <script src="js/reforma.js"></script>
+
+    <!-- Registro do Service Worker (PWA) -->
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("./service-worker.js")
+            .catch((error) => console.error("Falha ao registrar PWA:", error));
+        });
+      }
+    </script>
   </body>
 </html>
