@@ -280,17 +280,7 @@ window.reabrirServico = async function (id, numeroOs) {
 };
 
 // =========================================================
-// FILTRO POR COR (CLICANDO NO CHIP)
-// =========================================================
-window.definirFiltroCor = function (cor) {
-  inputBusca.value = cor;
-  renderizarLista();
-  // Scroll suave até a lista
-  listaContainer.scrollTop = 0;
-};
-
-// =========================================================
-// FILTROS E ESTATÍSTICAS
+// ESTATÍSTICAS
 // =========================================================
 function atualizarEstatisticas() {
   const total = todasReformas.length;
@@ -308,40 +298,6 @@ function atualizarEstatisticas() {
   document.getElementById("statProducao").textContent = producao;
   document.getElementById("statProntas").textContent = prontas;
   document.getElementById("statRetiradas").textContent = retiradas;
-
-  // ---- Contagem por cor (ignora retiradas) ----
-  const porCor = {};
-  todasReformas.forEach((os) => {
-    if (os.status === "Concluído") return;
-    const cor = (os.cor || "Sem cor").trim() || "Sem cor";
-    porCor[cor] = (porCor[cor] || 0) + 1;
-  });
-
-  const el = document.getElementById("statsPorCor");
-  const entradas = Object.entries(porCor).sort((a, b) => b[1] - a[1]);
-
-  if (entradas.length === 0) {
-    el.innerHTML = `<span class="text-slate-500 uppercase tracking-wider mr-1"><i class="fa-solid fa-palette mr-1.5 text-blue-400"></i>Por acabamento:</span>
-      <span class="text-slate-500">Nenhuma roda em produção.</span>`;
-  } else {
-    el.innerHTML =
-      `<span class="text-slate-500 uppercase tracking-wider mr-1"><i class="fa-solid fa-palette mr-1.5 text-blue-400"></i>Por acabamento:</span>` +
-      entradas
-        .map(
-          ([cor, qtd]) => `
-        <button
-          onclick="definirFiltroCor('${cor.replace(/'/g, "\\'")}')"
-          class="cor-chip px-2.5 py-1 rounded bg-darkbase border border-panelborder text-slate-300 flex items-center gap-1.5"
-          title="Filtrar por ${cor}"
-        >
-          <span class="text-blue-400 font-bold">${qtd}</span>
-          <span class="text-slate-500">×</span>
-          <span class="truncate max-w-[120px]">${cor}</span>
-        </button>
-      `,
-        )
-        .join("");
-  }
 }
 
 window.definirFiltro = function (tipo) {
@@ -353,10 +309,10 @@ window.definirFiltro = function (tipo) {
     if (btn) {
       if (t === tipo) {
         btn.className =
-          "px-3 py-1.5 text-xs mono font-semibold rounded bg-blue-600 text-white transition";
+          "px-2.5 py-1 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs mono font-semibold rounded bg-blue-600 text-white transition whitespace-nowrap";
       } else {
         btn.className =
-          "px-3 py-1.5 text-xs mono font-semibold rounded bg-darkbase hover:bg-slate-800 text-slate-400 border border-panelborder transition";
+          "px-2.5 py-1 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs mono font-semibold rounded bg-darkbase hover:bg-slate-800 text-slate-400 border border-panelborder transition whitespace-nowrap";
       }
     }
   });
@@ -447,7 +403,7 @@ function renderizarLista() {
       <div class="roda-card bg-panel border border-panelborder rounded-xl overflow-hidden">
         <div class="flex flex-col sm:flex-row">
           <!-- FOTO DESTAQUE -->
-          <div class="sm:w-56 sm:flex-shrink-0 relative">
+          <div class="sm:w-56 sm:flex-shrink-0 relative border-b sm:border-b-0 sm:border-r border-panelborder/50">
             ${
               fotoUrl
                 ? `<div class="thumb-wrap" onclick="abrirLightbox('${fotosString}', 0)">
@@ -461,7 +417,7 @@ function renderizarLista() {
                        <span class="text-white text-xs font-semibold drop-shadow"><i class="fa-solid fa-magnifying-glass-plus mr-1"></i> Ampliar</span>
                      </div>
                    </div>`
-                : `<div class="w-full h-[180px] sm:h-full sm:min-h-[180px] bg-darkbase flex flex-col items-center justify-center text-slate-600 gap-1">
+                : `<div class="w-full h-[160px] sm:h-full sm:min-h-[160px] bg-darkbase flex flex-col items-center justify-center text-slate-600 gap-1">
                      <i class="fa-regular fa-image text-2xl"></i>
                      <span class="text-[10px] mono">Sem foto</span>
                    </div>`
@@ -469,10 +425,10 @@ function renderizarLista() {
           </div>
 
           <!-- INFO -->
-          <div class="flex-1 p-4 flex flex-col gap-2 min-w-0">
+          <div class="flex-1 p-3 sm:p-4 flex flex-col gap-2 min-w-0">
             <!-- Linha topo: OS + Status -->
             <div class="flex items-start justify-between gap-3">
-              <div class="inline-flex items-center gap-2 bg-blue-600/10 border border-blue-500/30 rounded-lg px-3 py-1.5">
+              <div class="inline-flex items-center gap-2 bg-blue-600/10 border border-blue-500/30 rounded-lg px-2.5 py-1 sm:px-3 sm:py-1.5">
                 <span class="text-[10px] mono text-blue-400 uppercase tracking-widest">OS</span>
                 <span class="os-numero mono font-bold text-blue-300 leading-none">${os.numero_os || "S/N"}</span>
               </div>

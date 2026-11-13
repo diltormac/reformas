@@ -136,23 +136,28 @@
         transform: translateY(-1px);
       }
 
-      /* ====== CHIP DE COR ====== */
-      .cor-chip {
-        transition: all 0.15s ease;
-        cursor: pointer;
-      }
-      .cor-chip:hover {
-        background: #1e293b;
-        border-color: #3b82f6;
-      }
-
       /* ====== MOBILE ====== */
       @media (max-width: 640px) {
         .roda-card .thumb-wrap {
-          height: 180px;
+          height: 160px; /* Foto um pouco menor no mobile */
         }
         .os-numero {
           font-size: 1.15rem;
+        }
+        /* Deixa os stats em linha rolável */
+        .stats-scroll {
+          display: flex;
+          overflow-x: auto;
+          gap: 8px;
+          padding-bottom: 4px;
+          scrollbar-width: none; /* Firefox */
+        }
+        .stats-scroll::-webkit-scrollbar {
+          display: none; /* Chrome/Safari */
+        }
+        .stats-scroll > div {
+          flex: 0 0 auto;
+          min-width: 130px;
         }
       }
     </style>
@@ -168,50 +173,61 @@
     <meta name="mobile-web-app-capable" content="yes" />
   </head>
   <body class="h-screen flex flex-col overflow-hidden">
-    <!-- TOPO / HEADER -->
+    <!-- TOPO / HEADER (Compacto) -->
     <header
-      class="bg-panel border-b border-panelborder px-5 py-3 flex items-center justify-between flex-shrink-0 z-20"
+      class="bg-panel border-b border-panelborder px-3 sm:px-5 py-2 sm:py-3 flex items-center justify-between flex-shrink-0 z-20"
     >
-      <div class="flex items-center gap-3">
-        <div class="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"></div>
+      <div class="flex items-center gap-2 sm:gap-3">
+        <div
+          class="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-blue-500 animate-pulse"
+        ></div>
         <h1
-          class="font-bold text-xs uppercase tracking-widest text-slate-200 mono"
+          class="font-bold text-[10px] sm:text-xs uppercase tracking-widest text-slate-200 mono"
         >
-          OS Fácil <span class="text-blue-400 font-normal">//</span> Controle de
-          Reformas
+          OS Fácil
+          <span class="text-blue-400 font-normal hidden sm:inline">//</span>
+          <span class="hidden sm:inline"> Controle de Reformas</span>
         </h1>
       </div>
-      <div class="flex items-center gap-4">
+      <div class="flex items-center gap-2">
         <button
           onclick="window.location.href = 'index.html'"
-          class="text-xs mono bg-panelborder hover:bg-slate-800 text-slate-300 px-3 py-1.5 rounded transition border border-slate-800 flex items-center gap-1.5"
+          class="text-[10px] sm:text-xs mono bg-panelborder hover:bg-slate-800 text-slate-300 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded transition border border-slate-800 flex items-center gap-1.5"
         >
-          <i class="fa-solid fa-arrow-left text-blue-400"></i> Painel Geral
+          <i class="fa-solid fa-arrow-left text-blue-400"></i>
+          <span class="hidden sm:inline">Painel Geral</span
+          ><span class="sm:hidden">Voltar</span>
         </button>
       </div>
     </header>
 
     <!-- CONTEÚDO PRINCIPAL -->
     <main
-      class="flex-1 flex flex-col overflow-hidden p-4 gap-3 max-w-[1600px] w-full mx-auto"
+      class="flex-1 flex flex-col overflow-hidden p-3 sm:p-4 gap-2 sm:gap-3 max-w-[1600px] w-full mx-auto"
     >
-      <!-- STATS CARDS -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 flex-shrink-0">
+      <!-- STATS CARDS (Rolável no mobile) -->
+      <div
+        class="stats-scroll grid grid-cols-2 sm:grid-cols-4 sm:gap-3 flex-shrink-0"
+      >
         <div
-          class="stat-card bg-panel border border-panelborder rounded-lg p-3 flex items-center gap-3"
+          class="stat-card bg-panel border border-panelborder rounded-lg p-2.5 sm:p-3 flex items-center gap-2 sm:gap-3"
         >
           <div
-            class="w-10 h-10 rounded-lg bg-slate-500/10 border border-slate-500/20 flex items-center justify-center flex-shrink-0"
+            class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-slate-500/10 border border-slate-500/20 flex items-center justify-center flex-shrink-0"
           >
-            <i class="fa-solid fa-layer-group text-slate-300"></i>
+            <i
+              class="fa-solid fa-layer-group text-slate-300 text-sm sm:text-base"
+            ></i>
           </div>
           <div class="min-w-0">
-            <p class="text-[10px] mono text-slate-500 uppercase tracking-wider">
+            <p
+              class="text-[9px] sm:text-[10px] mono text-slate-500 uppercase tracking-wider leading-none"
+            >
               Total
             </p>
             <p
               id="statTotal"
-              class="text-xl font-bold text-white mono leading-none mt-1"
+              class="text-lg sm:text-xl font-bold text-white mono leading-none mt-1"
             >
               0
             </p>
@@ -219,22 +235,22 @@
         </div>
 
         <div
-          class="stat-card bg-panel border border-amber-500/30 rounded-lg p-3 flex items-center gap-3"
+          class="stat-card bg-panel border border-amber-500/30 rounded-lg p-2.5 sm:p-3 flex items-center gap-2 sm:gap-3"
         >
           <div
-            class="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center flex-shrink-0"
+            class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center flex-shrink-0"
           >
-            <i class="fa-solid fa-gear text-amber-400"></i>
+            <i class="fa-solid fa-gear text-amber-400 text-sm sm:text-base"></i>
           </div>
           <div class="min-w-0">
             <p
-              class="text-[10px] mono text-amber-500/80 uppercase tracking-wider"
+              class="text-[9px] sm:text-[10px] mono text-amber-500/80 uppercase tracking-wider leading-none"
             >
               Em Produção
             </p>
             <p
               id="statProducao"
-              class="text-xl font-bold text-amber-400 mono leading-none mt-1"
+              class="text-lg sm:text-xl font-bold text-amber-400 mono leading-none mt-1"
             >
               0
             </p>
@@ -242,22 +258,24 @@
         </div>
 
         <div
-          class="stat-card bg-panel border border-blue-500/30 rounded-lg p-3 flex items-center gap-3"
+          class="stat-card bg-panel border border-blue-500/30 rounded-lg p-2.5 sm:p-3 flex items-center gap-2 sm:gap-3"
         >
           <div
-            class="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0"
+            class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0"
           >
-            <i class="fa-solid fa-box-open text-blue-400"></i>
+            <i
+              class="fa-solid fa-box-open text-blue-400 text-sm sm:text-base"
+            ></i>
           </div>
           <div class="min-w-0">
             <p
-              class="text-[10px] mono text-blue-500/80 uppercase tracking-wider"
+              class="text-[9px] sm:text-[10px] mono text-blue-500/80 uppercase tracking-wider leading-none"
             >
               Prontas
             </p>
             <p
               id="statProntas"
-              class="text-xl font-bold text-blue-400 mono leading-none mt-1"
+              class="text-lg sm:text-xl font-bold text-blue-400 mono leading-none mt-1"
             >
               0
             </p>
@@ -265,22 +283,24 @@
         </div>
 
         <div
-          class="stat-card bg-panel border border-emerald-500/30 rounded-lg p-3 flex items-center gap-3"
+          class="stat-card bg-panel border border-emerald-500/30 rounded-lg p-2.5 sm:p-3 flex items-center gap-2 sm:gap-3"
         >
           <div
-            class="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0"
+            class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0"
           >
-            <i class="fa-solid fa-circle-check text-emerald-400"></i>
+            <i
+              class="fa-solid fa-circle-check text-emerald-400 text-sm sm:text-base"
+            ></i>
           </div>
           <div class="min-w-0">
             <p
-              class="text-[10px] mono text-emerald-500/80 uppercase tracking-wider"
+              class="text-[9px] sm:text-[10px] mono text-emerald-500/80 uppercase tracking-wider leading-none"
             >
               Retiradas
             </p>
             <p
               id="statRetiradas"
-              class="text-xl font-bold text-emerald-400 mono leading-none mt-1"
+              class="text-lg sm:text-xl font-bold text-emerald-400 mono leading-none mt-1"
             >
               0
             </p>
@@ -288,62 +308,52 @@
         </div>
       </div>
 
-      <!-- CONTAGEM POR COR -->
-      <div
-        id="statsPorCor"
-        class="bg-panel border border-panelborder rounded-lg px-3 py-2.5 flex items-center gap-2 flex-wrap flex-shrink-0 text-[11px] mono"
-      >
-        <span class="text-slate-500 uppercase tracking-wider mr-1"
-          ><i class="fa-solid fa-palette mr-1.5 text-blue-400"></i>Por
-          acabamento:</span
-        >
-        <span class="text-slate-600">carregando...</span>
-      </div>
-
       <!-- BARRA DE FILTROS E BUSCA -->
       <div
-        class="bg-panel p-3 rounded border border-panelborder flex flex-col sm:flex-row items-center justify-between gap-3 flex-shrink-0"
+        class="bg-panel p-2 sm:p-3 rounded border border-panelborder flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-3 flex-shrink-0"
       >
         <div
-          class="flex items-center gap-2 w-full sm:w-80 bg-darkbase px-3 py-1.5 rounded border border-panelborder focus-within:border-blue-500 transition"
+          class="flex items-center gap-2 w-full sm:w-80 bg-darkbase px-2.5 py-1.5 rounded border border-panelborder focus-within:border-blue-500 transition"
         >
-          <i class="fa-solid fa-magnifying-glass text-slate-500 text-xs"></i>
+          <i
+            class="fa-solid fa-magnifying-glass text-slate-500 text-[10px] sm:text-xs"
+          ></i>
           <input
             id="inputBusca"
             type="text"
-            placeholder="Filtrar por OS, cliente ou cor..."
-            class="w-full bg-transparent border-none outline-none text-xs text-white placeholder:text-slate-600 mono"
+            placeholder="Filtrar por OS, cliente..."
+            class="w-full bg-transparent border-none outline-none text-[11px] sm:text-xs text-white placeholder:text-slate-600 mono"
           />
         </div>
 
         <div
-          class="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0"
+          class="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 scrollbar-hide"
         >
           <button
             onclick="definirFiltro('todas')"
             id="btnFiltroTodas"
-            class="px-3 py-1.5 text-xs mono font-semibold rounded bg-blue-600 text-white transition"
+            class="px-2.5 py-1 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs mono font-semibold rounded bg-blue-600 text-white transition whitespace-nowrap"
           >
             Todas
           </button>
           <button
             onclick="definirFiltro('producao')"
             id="btnFiltroProducao"
-            class="px-3 py-1.5 text-xs mono font-semibold rounded bg-darkbase hover:bg-slate-800 text-slate-400 border border-panelborder transition"
+            class="px-2.5 py-1 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs mono font-semibold rounded bg-darkbase hover:bg-slate-800 text-slate-400 border border-panelborder transition whitespace-nowrap"
           >
             Em Produção
           </button>
           <button
             onclick="definirFiltro('prontas')"
             id="btnFiltroProntas"
-            class="px-3 py-1.5 text-xs mono font-semibold rounded bg-darkbase hover:bg-slate-800 text-slate-400 border border-panelborder transition"
+            class="px-2.5 py-1 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs mono font-semibold rounded bg-darkbase hover:bg-slate-800 text-slate-400 border border-panelborder transition whitespace-nowrap"
           >
             Prontas
           </button>
           <button
             onclick="definirFiltro('retiradas')"
             id="btnFiltroRetiradas"
-            class="px-3 py-1.5 text-xs mono font-semibold rounded bg-darkbase hover:bg-slate-800 text-slate-400 border border-panelborder transition"
+            class="px-2.5 py-1 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs mono font-semibold rounded bg-darkbase hover:bg-slate-800 text-slate-400 border border-panelborder transition whitespace-nowrap"
           >
             Retiradas
           </button>
@@ -353,7 +363,7 @@
       <!-- LISTA DE RODAS (CARDS) -->
       <div
         id="listaReformas"
-        class="flex-1 overflow-y-auto space-y-3 pr-1 pb-2"
+        class="flex-1 overflow-y-auto space-y-2 sm:space-y-3 pr-1 pb-2"
       >
         <div
           class="flex flex-col items-center justify-center py-16 text-slate-500 mono"
@@ -361,7 +371,7 @@
           <i
             class="fa-solid fa-circle-notch fa-spin text-2xl text-blue-500 mb-3 block"
           ></i>
-          Carregando registros do servidor...
+          <span class="text-xs">Carregando registros do servidor...</span>
         </div>
       </div>
     </main>
