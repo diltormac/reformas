@@ -300,22 +300,32 @@ function atualizarEstatisticas() {
   document.getElementById("statRetiradas").textContent = retiradas;
 }
 
+// =========================================================
+// FILTROS (INTEGRADOS COM OS CARDS)
+// =========================================================
 window.definirFiltro = function (tipo) {
+  // Se clicar no que já está ativo (e não for "todas"), volta pra "todas"
+  if (filtroAtual === tipo && tipo !== "todas") {
+    tipo = "todas";
+  }
   filtroAtual = tipo;
-  ["todas", "producao", "prontas", "retiradas"].forEach((t) => {
-    const btn = document.getElementById(
-      `btnFiltro${t.charAt(0).toUpperCase() + t.slice(1)}`,
-    );
-    if (btn) {
-      if (t === tipo) {
-        btn.className =
-          "px-2.5 py-1 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs mono font-semibold rounded bg-blue-600 text-white transition whitespace-nowrap";
-      } else {
-        btn.className =
-          "px-2.5 py-1 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs mono font-semibold rounded bg-darkbase hover:bg-slate-800 text-slate-400 border border-panelborder transition whitespace-nowrap";
-      }
-    }
+
+  const mapIds = {
+    todas: "cardFiltroTodas",
+    producao: "cardFiltroProducao",
+    prontas: "cardFiltroProntas",
+    retiradas: "cardFiltroRetiradas",
+  };
+
+  // Remove o destaque de todos e adiciona apenas no selecionado
+  Object.values(mapIds).forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove("ativo");
   });
+
+  const ativoEl = document.getElementById(mapIds[tipo]);
+  if (ativoEl) ativoEl.classList.add("ativo");
+
   renderizarLista();
 };
 

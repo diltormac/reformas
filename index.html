@@ -126,34 +126,37 @@
         letter-spacing: 0.02em;
       }
 
-      /* ====== STATS CARDS ====== */
+      /* ====== STATS CARDS CLICÁVEIS ====== */
       .stat-card {
-        transition:
-          border-color 0.2s ease,
-          transform 0.2s ease;
+        transition: all 0.2s ease;
+        cursor: pointer;
       }
       .stat-card:hover {
         transform: translateY(-1px);
+        background: #111827; /* um tiquinho mais claro */
+      }
+      .stat-card.ativo {
+        border-color: #3b82f6; /* Azul de destaque */
+        box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3);
       }
 
       /* ====== MOBILE ====== */
       @media (max-width: 640px) {
         .roda-card .thumb-wrap {
-          height: 160px; /* Foto um pouco menor no mobile */
+          height: 160px;
         }
         .os-numero {
           font-size: 1.15rem;
         }
-        /* Deixa os stats em linha rolável */
         .stats-scroll {
           display: flex;
           overflow-x: auto;
           gap: 8px;
           padding-bottom: 4px;
-          scrollbar-width: none; /* Firefox */
+          scrollbar-width: none;
         }
         .stats-scroll::-webkit-scrollbar {
-          display: none; /* Chrome/Safari */
+          display: none;
         }
         .stats-scroll > div {
           flex: 0 0 auto;
@@ -173,7 +176,7 @@
     <meta name="mobile-web-app-capable" content="yes" />
   </head>
   <body class="h-screen flex flex-col overflow-hidden">
-    <!-- TOPO / HEADER (Compacto) -->
+    <!-- TOPO / HEADER -->
     <header
       class="bg-panel border-b border-panelborder px-3 sm:px-5 py-2 sm:py-3 flex items-center justify-between flex-shrink-0 z-20"
     >
@@ -205,12 +208,14 @@
     <main
       class="flex-1 flex flex-col overflow-hidden p-3 sm:p-4 gap-2 sm:gap-3 max-w-[1600px] w-full mx-auto"
     >
-      <!-- STATS CARDS (Rolável no mobile) -->
+      <!-- STATS CARDS (Agora são os próprios filtros) -->
       <div
         class="stats-scroll grid grid-cols-2 sm:grid-cols-4 sm:gap-3 flex-shrink-0"
       >
         <div
-          class="stat-card bg-panel border border-panelborder rounded-lg p-2.5 sm:p-3 flex items-center gap-2 sm:gap-3"
+          onclick="definirFiltro('todas')"
+          id="cardFiltroTodas"
+          class="stat-card ativo bg-panel border border-panelborder rounded-lg p-2.5 sm:p-3 flex items-center gap-2 sm:gap-3"
         >
           <div
             class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-slate-500/10 border border-slate-500/20 flex items-center justify-center flex-shrink-0"
@@ -235,7 +240,9 @@
         </div>
 
         <div
-          class="stat-card bg-panel border border-amber-500/30 rounded-lg p-2.5 sm:p-3 flex items-center gap-2 sm:gap-3"
+          onclick="definirFiltro('producao')"
+          id="cardFiltroProducao"
+          class="stat-card bg-panel border border-panelborder rounded-lg p-2.5 sm:p-3 flex items-center gap-2 sm:gap-3"
         >
           <div
             class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center flex-shrink-0"
@@ -258,7 +265,9 @@
         </div>
 
         <div
-          class="stat-card bg-panel border border-blue-500/30 rounded-lg p-2.5 sm:p-3 flex items-center gap-2 sm:gap-3"
+          onclick="definirFiltro('prontas')"
+          id="cardFiltroProntas"
+          class="stat-card bg-panel border border-panelborder rounded-lg p-2.5 sm:p-3 flex items-center gap-2 sm:gap-3"
         >
           <div
             class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0"
@@ -283,7 +292,9 @@
         </div>
 
         <div
-          class="stat-card bg-panel border border-emerald-500/30 rounded-lg p-2.5 sm:p-3 flex items-center gap-2 sm:gap-3"
+          onclick="definirFiltro('retiradas')"
+          id="cardFiltroRetiradas"
+          class="stat-card bg-panel border border-panelborder rounded-lg p-2.5 sm:p-3 flex items-center gap-2 sm:gap-3"
         >
           <div
             class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0"
@@ -308,55 +319,20 @@
         </div>
       </div>
 
-      <!-- BARRA DE FILTROS E BUSCA -->
-      <div
-        class="bg-panel p-2 sm:p-3 rounded border border-panelborder flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-3 flex-shrink-0"
-      >
+      <!-- BARRA DE BUSCA (Única e limpa) -->
+      <div class="flex-shrink-0">
         <div
-          class="flex items-center gap-2 w-full sm:w-80 bg-darkbase px-2.5 py-1.5 rounded border border-panelborder focus-within:border-blue-500 transition"
+          class="flex items-center gap-2 w-full bg-panel px-3 py-2 rounded-lg border border-panelborder focus-within:border-blue-500 transition shadow-sm"
         >
           <i
-            class="fa-solid fa-magnifying-glass text-slate-500 text-[10px] sm:text-xs"
+            class="fa-solid fa-magnifying-glass text-slate-500 text-[11px] sm:text-xs"
           ></i>
           <input
             id="inputBusca"
             type="text"
-            placeholder="Filtrar por OS, cliente..."
-            class="w-full bg-transparent border-none outline-none text-[11px] sm:text-xs text-white placeholder:text-slate-600 mono"
+            placeholder="Filtrar por OS, cliente ou cor..."
+            class="w-full bg-transparent border-none outline-none text-[11px] sm:text-xs text-white placeholder:text-slate-500 mono"
           />
-        </div>
-
-        <div
-          class="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 scrollbar-hide"
-        >
-          <button
-            onclick="definirFiltro('todas')"
-            id="btnFiltroTodas"
-            class="px-2.5 py-1 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs mono font-semibold rounded bg-blue-600 text-white transition whitespace-nowrap"
-          >
-            Todas
-          </button>
-          <button
-            onclick="definirFiltro('producao')"
-            id="btnFiltroProducao"
-            class="px-2.5 py-1 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs mono font-semibold rounded bg-darkbase hover:bg-slate-800 text-slate-400 border border-panelborder transition whitespace-nowrap"
-          >
-            Em Produção
-          </button>
-          <button
-            onclick="definirFiltro('prontas')"
-            id="btnFiltroProntas"
-            class="px-2.5 py-1 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs mono font-semibold rounded bg-darkbase hover:bg-slate-800 text-slate-400 border border-panelborder transition whitespace-nowrap"
-          >
-            Prontas
-          </button>
-          <button
-            onclick="definirFiltro('retiradas')"
-            id="btnFiltroRetiradas"
-            class="px-2.5 py-1 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs mono font-semibold rounded bg-darkbase hover:bg-slate-800 text-slate-400 border border-panelborder transition whitespace-nowrap"
-          >
-            Retiradas
-          </button>
         </div>
       </div>
 
