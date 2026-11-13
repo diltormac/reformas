@@ -27,7 +27,7 @@ function comprimirImagem(file) {
       img.src = event.target.result;
       img.onload = () => {
         const canvas = document.createElement("canvas");
-        const MAX = 1280; // Aumentado um pouco para dar mais nitidez na miniatura grande
+        const MAX = 1280;
         let width = img.width;
         let height = img.height;
         if (width > height && width > MAX) {
@@ -212,7 +212,6 @@ window.marcarServicoFinalizado = async function (id, numeroOs) {
     text: `Senha exigida para concluir OS #${numeroOs || "S/N"}:`,
     input: "password",
     inputPlaceholder: "Senha...",
-    // === CORREÇÃO AQUI ===
     inputAttributes: {
       inputmode: "numeric",
       pattern: "[0-9]*",
@@ -254,7 +253,6 @@ window.reabrirServico = async function (id, numeroOs) {
     text: `Senha exigida para reabrir OS #${numeroOs || "S/N"}:`,
     input: "password",
     inputPlaceholder: "Senha...",
-    // === CORREÇÃO AQUI ===
     inputAttributes: {
       inputmode: "numeric",
       pattern: "[0-9]*",

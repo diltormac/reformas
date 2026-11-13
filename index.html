@@ -6,13 +6,13 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover"
     />
-    <title>OS Fácil — Painel de Reformas (Cockpit)</title>
+    <title>OS Fácil — Painel de Reformas</title>
 
-    <!-- Tailwind e SweetAlert2 -->
+    <!-- Tailwind e SweetAlert -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-    <!-- SDK do Capacitor e Plugin da Câmera -->
+    <!-- SDK do Capacitor e Plugin da Câmera (Corrigido para não dar erro no console) -->
     <script src="https://cdn.jsdelivr.net/npm/@capacitor/core@5.0.0/dist/capacitor.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@capacitor/camera@5.0.0/dist/plugin.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@capacitor/camera@5.0.0/dist/web.js"></script>
@@ -23,9 +23,9 @@
         theme: {
           extend: {
             colors: {
-              darkbase: "#06080f",
-              panel: "#0e1320",
-              panelborder: "#1a233a",
+              darker: "#090d16",
+              darkcard: "#111827",
+              darkborder: "#1f293d",
             },
           },
         },
@@ -36,25 +36,27 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
     />
     <link
-      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
       rel="stylesheet"
     />
     <style>
+      html, body {
+        height: 100%;
+        margin: 0;
+      }
       body {
         font-family: "Inter", sans-serif;
-        background-color: #06080f;
-        color: #cbd5e1;
-      }
-      .mono {
-        font-family: "JetBrains Mono", monospace;
+        background: #090d16;
+        color: #f8fafc;
+        overflow: hidden;
       }
       ::-webkit-scrollbar {
-        width: 5px;
-        height: 5px;
+        width: 6px;
+        height: 6px;
       }
       ::-webkit-scrollbar-thumb {
-        background: #1e293b;
-        border-radius: 2px;
+        background: #475569;
+        border-radius: 6px;
       }
       ::-webkit-scrollbar-track {
         background: transparent;
@@ -65,298 +67,136 @@
         position: fixed;
         inset: 0;
         z-index: 9999;
-        background: rgba(3, 5, 10, 0.95);
-        backdrop-filter: blur(6px);
+        background: rgba(3, 7, 18, 0.95);
+        backdrop-filter: blur(12px);
         align-items: center;
         justify-content: center;
         opacity: 0;
-        transition: opacity 0.2s ease;
+        transition: opacity 0.3s ease;
       }
       .lightbox.active {
         display: flex;
         opacity: 1;
       }
       .lightbox img {
-        max-width: 96%;
-        max-height: 92vh;
+        max-width: 90%;
+        max-height: 85vh;
         object-fit: contain;
-        border-radius: 6px;
-        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.9);
-        border: 1px solid #1e293b;
-      }
-
-      /* ====== MINIATURA RESPONSIVA ====== */
-      .thumb-wrap {
-        position: relative;
-        width: 100%;
-        aspect-ratio: 4 / 3;
-        border-radius: 8px;
-        overflow: hidden;
-        background: #0b0f1a;
-        border: 1px solid #1a233a;
-        cursor: pointer;
-      }
-      .thumb-wrap img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        display: block;
-        transition: transform 0.3s ease;
-      }
-      .thumb-wrap:hover img {
-        transform: scale(1.05);
-      }
-      .thumb-empty {
-        width: 100%;
-        aspect-ratio: 4 / 3;
-        border-radius: 8px;
-        background: #0b0f1a;
-        border: 1px dashed #1a233a;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        color: #64748b;
-        gap: 6px;
-        font-size: 11px;
-      }
-
-      /* ====== NÚMERO DA OS EM DESTAQUE ====== */
-      .os-numero {
-        font-size: 1.5rem; /* 24px no celular */
-        font-weight: 700;
-        letter-spacing: 0.02em;
-      }
-      @media (min-width: 768px) {
-        .os-numero {
-          font-size: 1.75rem; /* 28px no desktop */
-        }
-      }
-
-      /* ====== MODO CARD NO CELULAR ====== */
-      @media (max-width: 768px) {
-        /* Esconde cabeçalho de tabela */
-        thead {
-          display: none;
-        }
-        /* Cada linha vira um card */
-        tbody tr {
-          display: block;
-          margin: 10px;
-          border: 1px solid #1a233a;
-          border-radius: 10px;
-          background: #0b0f1a;
-          overflow: hidden;
-        }
-        tbody td {
-          display: block;
-          width: 100% !important;
-          padding: 8px 12px !important;
-          text-align: left !important;
-          border: none;
-        }
-        /* A célula da foto ocupa destaque no topo */
-        tbody td:first-child {
-          padding: 0 !important;
-        }
-        /* Esconde "Ampliar" no hover em touch */
-        .thumb-wrap .overlay-hint {
-          opacity: 0;
-        }
+        border-radius: 12px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.1);
       }
     </style>
 
+    <!-- PWA: instalação e ícones -->
     <link rel="manifest" href="./manifest.json" />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="32x32"
-      href="./favicon-32x32.png"
-    />
-    <meta name="theme-color" content="#06080f" />
+    <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32x32.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png" />
+    <meta name="theme-color" content="#073BCE" />
     <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="OS Fácil Reformas" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   </head>
   <body class="h-screen flex flex-col overflow-hidden">
-    <!-- TOPO / HEADER -->
-    <header
-      class="bg-panel border-b border-panelborder px-5 py-3 flex items-center justify-between flex-shrink-0 z-20"
-    >
-      <div class="flex items-center gap-3">
-        <div class="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"></div>
-        <h1
-          class="font-bold text-xs uppercase tracking-widest text-slate-200 mono"
-        >
-          OS Fácil <span class="text-blue-400 font-normal">//</span> Controle de
-          Reformas
-        </h1>
-      </div>
+    <!-- HEADER -->
+    <header class="bg-darkcard/90 backdrop-blur-md border-b border-darkborder px-6 py-4 flex items-center justify-between shadow-lg flex-shrink-0 z-20">
       <div class="flex items-center gap-4">
-        <div
-          class="hidden md:flex items-center gap-3 text-xs mono text-slate-400"
-        >
-          <span
-            >Total: <strong id="statTotal" class="text-white">0</strong></span
-          >
-          <span>•</span>
-          <span
-            >Produção:
-            <strong id="statProducao" class="text-amber-400">0</strong></span
-          >
-          <span>•</span>
-          <span
-            >Prontas:
-            <strong id="statProntas" class="text-blue-400">0</strong></span
-          >
-          <span>•</span>
-          <span
-            >Retiradas:
-            <strong id="statRetiradas" class="text-emerald-400">0</strong></span
-          >
+        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center shadow-lg shadow-indigo-500/30 text-white">
+          <i class="fa-solid fa-paint-roller text-xl"></i>
         </div>
-        <button
-          onclick="window.location.href = 'index.html'"
-          class="text-xs mono bg-panelborder hover:bg-slate-800 text-slate-300 px-3 py-1.5 rounded transition border border-slate-800 flex items-center gap-1.5"
-        >
-          <i class="fa-solid fa-arrow-left text-blue-400"></i> Painel Geral
+        <div>
+          <h1 class="font-black text-lg text-white tracking-wide leading-none">
+            Painel de Reformas
+          </h1>
+          <p class="text-[11px] text-indigo-300 font-bold mt-1 uppercase tracking-widest">
+            Acompanhamento das Rodas
+          </p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <button onclick="window.location.href = 'index.html'" class="text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-100 px-4 py-2.5 rounded-xl transition border border-slate-700 flex items-center gap-2 shadow-sm">
+          <i class="fa-solid fa-arrow-left text-indigo-400"></i> Painel Geral
         </button>
       </div>
     </header>
 
-    <!-- CONTEÚDO PRINCIPAL -->
-    <main
-      class="flex-1 flex flex-col overflow-hidden p-4 gap-3 max-w-[1600px] w-full mx-auto"
-    >
-      <!-- BARRA DE FILTROS E BUSCA -->
-      <div
-        class="bg-panel p-3 rounded border border-panelborder flex flex-col sm:flex-row items-center justify-between gap-3 flex-shrink-0"
-      >
-        <div
-          class="flex items-center gap-2 w-full sm:w-80 bg-darkbase px-3 py-1.5 rounded border border-panelborder focus-within:border-blue-500 transition"
-        >
-          <i class="fa-solid fa-magnifying-glass text-slate-500 text-xs"></i>
-          <input
-            id="inputBusca"
-            type="text"
-            placeholder="Filtrar por OS, cliente ou cor..."
-            class="w-full bg-transparent border-none outline-none text-xs text-white placeholder:text-slate-600 mono"
-          />
+    <!-- MAIN -->
+    <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+      <div class="max-w-7xl mx-auto space-y-6">
+        
+        <!-- CARDS RESUMO (4 CARDS) -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <!-- Card 1: Total -->
+          <div class="bg-darkcard/80 backdrop-blur-sm p-4 rounded-2xl border border-darkborder shadow-xl hover:border-slate-700 transition cursor-pointer">
+            <p class="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Total de Reformas</p>
+            <p class="text-3xl font-black text-white mt-2 tracking-tight" id="statTotal">0</p>
+          </div>
+
+          <!-- Card 2: Em Produção (Pendentes + Em Andamento) -->
+          <div class="bg-darkcard/80 backdrop-blur-sm p-4 rounded-2xl border border-amber-500/30 shadow-xl hover:border-amber-500/50 transition cursor-pointer">
+            <p class="text-[11px] font-extrabold text-amber-400 uppercase tracking-wider">Em Produção</p>
+            <p class="text-3xl font-black text-amber-300 mt-2 tracking-tight" id="statProducao">0</p>
+          </div>
+
+          <!-- Card 3: Prontas p/ Retirada -->
+          <div class="bg-darkcard/80 backdrop-blur-sm p-4 rounded-2xl border border-blue-500/30 shadow-xl hover:border-blue-500/50 transition cursor-pointer">
+            <p class="text-[11px] font-extrabold text-blue-400 uppercase tracking-wider">Prontas p/ Retirada</p>
+            <p class="text-3xl font-black text-blue-300 mt-2 tracking-tight" id="statProntas">0</p>
+          </div>
+
+          <!-- Card 4: Retiradas -->
+          <div class="bg-darkcard/80 backdrop-blur-sm p-4 rounded-2xl border border-emerald-500/30 shadow-xl hover:border-emerald-500/50 transition cursor-pointer">
+            <p class="text-[11px] font-extrabold text-emerald-400 uppercase tracking-wider">Retiradas</p>
+            <p class="text-3xl font-black text-emerald-300 mt-2 tracking-tight" id="statRetiradas">0</p>
+          </div>
         </div>
 
-        <div
-          class="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0"
-        >
-          <button
-            onclick="definirFiltro('todas')"
-            id="btnFiltroTodas"
-            class="px-3 py-1.5 text-xs mono font-semibold rounded bg-blue-600 text-white transition"
-          >
-            Todas
-          </button>
-          <button
-            onclick="definirFiltro('producao')"
-            id="btnFiltroProducao"
-            class="px-3 py-1.5 text-xs mono font-semibold rounded bg-darkbase hover:bg-slate-800 text-slate-400 border border-panelborder transition"
-          >
-            Em Produção
-          </button>
-          <button
-            onclick="definirFiltro('prontas')"
-            id="btnFiltroProntas"
-            class="px-3 py-1.5 text-xs mono font-semibold rounded bg-darkbase hover:bg-slate-800 text-slate-400 border border-panelborder transition"
-          >
-            Prontas
-          </button>
-          <button
-            onclick="definirFiltro('retiradas')"
-            id="btnFiltroRetiradas"
-            class="px-3 py-1.5 text-xs mono font-semibold rounded bg-darkbase hover:bg-slate-800 text-slate-400 border border-panelborder transition"
-          >
-            Retiradas
-          </button>
+        <!-- BARRA DE BUSCA -->
+        <div class="bg-darkcard/90 backdrop-blur-md p-3.5 rounded-2xl border border-darkborder shadow-lg flex items-center gap-3 focus-within:border-indigo-500 transition-colors">
+          <i class="fa-solid fa-magnifying-glass text-indigo-400 pl-2 text-base"></i>
+          <input id="inputBusca" type="text" placeholder="Buscar por Nº da OS, cliente ou cor..." class="w-full bg-transparent border-none outline-none text-sm font-semibold text-white placeholder:text-slate-500" />
         </div>
-      </div>
 
-      <!-- TABELA / LISTA DE REFORMAS -->
-      <div
-        class="flex-1 bg-panel rounded border border-panelborder overflow-y-auto relative"
-      >
-        <table class="w-full text-left border-collapse">
-          <thead
-            class="bg-darkbase sticky top-0 z-10 border-b border-panelborder text-[11px] mono text-slate-400 uppercase tracking-wider"
-          >
-            <tr>
-              <th class="p-3 w-52 text-center">Foto Grande (Destaque)</th>
-              <th class="p-3 w-32">OS Nº</th>
-              <th class="p-3">Cliente</th>
-              <th class="p-3 w-40">Acabamento / Cor</th>
-              <th class="p-3 w-32 text-center">Status</th>
-              <th class="p-3 w-28 text-center">Data</th>
-              <th class="p-3 w-44 text-right">Ações</th>
-            </tr>
-          </thead>
-          <tbody
-            id="listaReformas"
-            class="divide-y divide-panelborder/50 text-xs"
-          >
-            <tr>
-              <td colspan="7" class="py-16 text-center text-slate-500 mono">
-                <i
-                  class="fa-solid fa-circle-notch fa-spin text-xl text-blue-500 mb-2 block"
-                ></i>
-                Carregando registros do servidor...
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <!-- LISTA DE REFORMAS -->
+        <div id="listaReformas" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="col-span-full py-16 text-center text-slate-400">
+            <i class="fa-solid fa-spinner fa-spin text-3xl mb-3 text-indigo-500"></i>
+            <p class="text-sm font-bold">Buscando reformas no banco...</p>
+          </div>
+        </div>
       </div>
     </main>
 
-    <!-- LIGHTBOX -->
+    <!-- LIGHTBOX (MODAL DE IMAGEM EXPANDIDA) -->
     <div id="lightbox" class="lightbox" onclick="fecharLightbox(event)">
-      <button
-        onclick="fecharLightbox(event)"
-        class="absolute top-5 right-5 w-9 h-9 bg-panel border border-panelborder text-slate-300 rounded flex items-center justify-center hover:bg-slate-800 transition"
-      >
-        <i class="fa-solid fa-xmark text-sm"></i>
+      <button onclick="fecharLightbox(event)" class="absolute top-6 right-6 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white/90 hover:text-white text-xl z-50 transition-colors backdrop-blur-md">
+        <i class="fa-solid fa-xmark"></i>
       </button>
-      <button
-        onclick="navegarLightbox(event, -1)"
-        id="btnPrev"
-        class="absolute left-5 top-1/2 -translate-y-1/2 w-10 h-10 bg-panel border border-panelborder text-slate-300 rounded flex items-center justify-center hover:bg-slate-800 transition"
-      >
-        <i class="fa-solid fa-chevron-left text-sm"></i>
+      <button onclick="navegarLightbox(event, -1)" id="btnPrev" class="absolute left-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white text-xl z-50 transition-colors backdrop-blur-md">
+        <i class="fa-solid fa-chevron-left"></i>
       </button>
-      <img
-        id="lightboxImg"
-        src=""
-        alt="Ampliação"
-        onclick="event.stopPropagation()"
-      />
-      <button
-        onclick="navegarLightbox(event, 1)"
-        id="btnNext"
-        class="absolute right-5 top-1/2 -translate-y-1/2 w-10 h-10 bg-panel border border-panelborder text-slate-300 rounded flex items-center justify-center hover:bg-slate-800 transition"
-      >
-        <i class="fa-solid fa-chevron-right text-sm"></i>
+      <img id="lightboxImg" src="" alt="Foto Expandida" onclick="event.stopPropagation()" />
+      <button onclick="navegarLightbox(event, 1)" id="btnNext" class="absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white text-xl z-50 transition-colors backdrop-blur-md">
+        <i class="fa-solid fa-chevron-right"></i>
       </button>
-      <div
-        id="lightboxCounter"
-        class="absolute bottom-5 left-1/2 -translate-x-1/2 text-slate-300 mono bg-panel border border-panelborder px-3.5 py-1 rounded text-xs"
-      >
+      <div id="lightboxCounter" class="absolute bottom-6 left-1/2 -translate-x-1/2 text-white font-bold bg-slate-900/90 border border-slate-700 px-4 py-1.5 rounded-full text-xs backdrop-blur-md tracking-wider shadow-lg">
         1 / 1
       </div>
     </div>
 
     <!-- SCRIPTS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Carrega o script de reformas -->
     <script src="js/reforma.js"></script>
 
+    <!-- Registro do Service Worker (PWA) -->
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
           navigator.serviceWorker
             .register("./service-worker.js")
-            .catch(() => {});
+            .catch((error) => console.error("Falha ao registrar PWA:", error));
         });
       }
     </script>
