@@ -212,6 +212,13 @@ window.marcarServicoFinalizado = async function (id, numeroOs) {
     text: `Senha exigida para concluir OS #${numeroOs || "S/N"}:`,
     input: "password",
     inputPlaceholder: "Senha...",
+    // === CORREÇÃO AQUI ===
+    inputAttributes: {
+      inputmode: "numeric",
+      pattern: "[0-9]*",
+      maxlength: "4",
+      autocomplete: "off",
+    },
     background: "#0e1320",
     color: "#cbd5e1",
     confirmButtonColor: "#2563eb",
@@ -247,6 +254,13 @@ window.reabrirServico = async function (id, numeroOs) {
     text: `Senha exigida para reabrir OS #${numeroOs || "S/N"}:`,
     input: "password",
     inputPlaceholder: "Senha...",
+    // === CORREÇÃO AQUI ===
+    inputAttributes: {
+      inputmode: "numeric",
+      pattern: "[0-9]*",
+      maxlength: "4",
+      autocomplete: "off",
+    },
     background: "#0e1320",
     color: "#cbd5e1",
     confirmButtonColor: "#d97706",
