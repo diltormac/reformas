@@ -27,7 +27,7 @@ function comprimirImagem(file) {
       img.src = event.target.result;
       img.onload = () => {
         const canvas = document.createElement("canvas");
-        const MAX = 1280; // Aumentado um pouco para dar mais nitidez na miniatura grande
+        const MAX = 1280;
         let width = img.width;
         let height = img.height;
         if (width > height && width > MAX) {
@@ -123,7 +123,10 @@ async function carregarReformas() {
     renderizarLista();
   } catch (error) {
     console.error("Erro ao carregar:", error);
-    listaContainer.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-red-400 mono">Erro ao carregar registros do servidor.</td></tr>`;
+    listaContainer.innerHTML = `<div class="flex flex-col items-center justify-center py-16 text-red-400 mono text-sm">
+      <i class="fa-solid fa-triangle-exclamation text-2xl mb-2"></i>
+      Erro ao carregar registros do servidor.
+    </div>`;
   }
 }
 
@@ -277,6 +280,16 @@ window.reabrirServico = async function (id, numeroOs) {
 };
 
 // =========================================================
+// FILTRO POR COR (CLICANDO NO CHIP)
+// =========================================================
+window.definirFiltroCor = function (cor) {
+  inputBusca.value = cor;
+  renderizarLista();
+  // Scroll suave até a lista
+  listaContainer.scrollTop = 0;
+};
+
+// =========================================================
 // FILTROS E ESTATÍSTICAS
 // =========================================================
 function atualizarEstatisticas() {
@@ -295,6 +308,40 @@ function atualizarEstatisticas() {
   document.getElementById("statProducao").textContent = producao;
   document.getElementById("statProntas").textContent = prontas;
   document.getElementById("statRetiradas").textContent = retiradas;
+
+  // ---- Contagem por cor (ignora retiradas) ----
+  const porCor = {};
+  todasReformas.forEach((os) => {
+    if (os.status === "Concluído") return;
+    const cor = (os.cor || "Sem cor").trim() || "Sem cor";
+    porCor[cor] = (porCor[cor] || 0) + 1;
+  });
+
+  const el = document.getElementById("statsPorCor");
+  const entradas = Object.entries(porCor).sort((a, b) => b[1] - a[1]);
+
+  if (entradas.length === 0) {
+    el.innerHTML = `<span class="text-slate-500 uppercase tracking-wider mr-1"><i class="fa-solid fa-palette mr-1.5 text-blue-400"></i>Por acabamento:</span>
+      <span class="text-slate-500">Nenhuma roda em produção.</span>`;
+  } else {
+    el.innerHTML =
+      `<span class="text-slate-500 uppercase tracking-wider mr-1"><i class="fa-solid fa-palette mr-1.5 text-blue-400"></i>Por acabamento:</span>` +
+      entradas
+        .map(
+          ([cor, qtd]) => `
+        <button
+          onclick="definirFiltroCor('${cor.replace(/'/g, "\\'")}')"
+          class="cor-chip px-2.5 py-1 rounded bg-darkbase border border-panelborder text-slate-300 flex items-center gap-1.5"
+          title="Filtrar por ${cor}"
+        >
+          <span class="text-blue-400 font-bold">${qtd}</span>
+          <span class="text-slate-500">×</span>
+          <span class="truncate max-w-[120px]">${cor}</span>
+        </button>
+      `,
+        )
+        .join("");
+  }
 }
 
 window.definirFiltro = function (tipo) {
@@ -317,7 +364,7 @@ window.definirFiltro = function (tipo) {
 };
 
 // =========================================================
-// RENDERIZAR LISTA (RESPONSIVO — CARD NO MOBILE)
+// RENDERIZAR LISTA (CARDS DE RODA)
 // =========================================================
 function renderizarLista() {
   const termo = inputBusca.value.trim().toLowerCase();
@@ -343,7 +390,10 @@ function renderizarLista() {
   });
 
   if (filtradas.length === 0) {
-    listaContainer.innerHTML = `<tr><td colspan="7" class="py-12 text-center text-slate-500 mono">Nenhum registro encontrado.</td></tr>`;
+    listaContainer.innerHTML = `<div class="flex flex-col items-center justify-center py-20 text-slate-500">
+      <i class="fa-regular fa-folder-open text-3xl mb-3"></i>
+      <p class="mono text-sm">Nenhum registro encontrado.</p>
+    </div>`;
     return;
   }
 
@@ -365,6 +415,7 @@ function renderizarLista() {
       const fotoUrl = fotosArray.length > 0 ? fotosArray[0] : null;
       const fotosString = JSON.stringify(fotosArray).replace(/"/g, "&quot;");
 
+      // ---- Badge de status ----
       let badgeStatus = `<span class="px-2 py-0.5 rounded text-[10px] mono bg-amber-500/10 text-amber-400 border border-amber-500/20">${os.status || "Pendente"}</span>`;
       if (os.status === "Em andamento")
         badgeStatus = `<span class="px-2 py-0.5 rounded text-[10px] mono bg-blue-500/10 text-blue-400 border border-blue-500/20">Em andamento</span>`;
@@ -373,84 +424,85 @@ function renderizarLista() {
       if (os.servico_finalizado && os.status !== "Concluído")
         badgeStatus = `<span class="px-2 py-0.5 rounded text-[10px] mono bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Pronto p/ Retirada</span>`;
 
+      // ---- Ações ----
       let acoesHtml = "";
       if (os.status !== "Concluído") {
         if (!os.servico_finalizado) {
-          acoesHtml = `<button onclick="marcarServicoFinalizado('${os.id}', '${os.numero_os || ""}')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[11px] rounded mono transition flex-1 sm:flex-none">Finalizar</button>`;
+          acoesHtml = `<button onclick="marcarServicoFinalizado('${os.id}', '${os.numero_os || ""}')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[11px] rounded mono transition flex items-center gap-1.5">
+            <i class="fa-solid fa-check"></i> Finalizar
+          </button>`;
         } else {
-          acoesHtml = `<div class="flex items-center justify-end gap-2 flex-1 sm:flex-none"><span class="text-[10px] text-emerald-400 mono">Aguardando</span><button onclick="reabrirServico('${os.id}', '${os.numero_os || ""}')" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[11px]" title="Reabrir"><i class="fa-solid fa-lock-open"></i></button></div>`;
+          acoesHtml = `<div class="flex items-center gap-2">
+            <span class="text-[10px] text-emerald-400 mono hidden sm:inline">Aguardando</span>
+            <button onclick="reabrirServico('${os.id}', '${os.numero_os || ""}')" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[11px]" title="Reabrir">
+              <i class="fa-solid fa-lock-open"></i>
+            </button>
+          </div>`;
         }
       }
 
       const dataFmt = new Date(os.created_at).toLocaleDateString("pt-BR");
 
       return `
-        <tr class="hover:bg-panelborder/30 transition align-top">
-          <!-- FOTO (no mobile vira banner grande no topo) -->
-          <td class="p-3 text-center">
+      <div class="roda-card bg-panel border border-panelborder rounded-xl overflow-hidden">
+        <div class="flex flex-col sm:flex-row">
+          <!-- FOTO DESTAQUE -->
+          <div class="sm:w-56 sm:flex-shrink-0 relative">
             ${
               fotoUrl
-                ? `<div class="thumb-wrap mx-auto" onclick="abrirLightbox('${fotosString}', 0)">
-                   <img src="${fotoUrl}" alt="Foto OS ${os.numero_os || ""}" loading="lazy">
-                   <div class="overlay-hint absolute inset-0 bg-slate-950/40 opacity-0 hover:opacity-100 transition flex items-center justify-center">
-                     <span class="text-white text-xs font-semibold drop-shadow"><i class="fa-solid fa-magnifying-glass-plus mr-1"></i> Ampliar</span>
-                   </div>
-                   ${
-                     fotosArray.length > 1
-                       ? `<span class="absolute bottom-2 right-2 bg-slate-900/90 text-white text-[10px] px-2 py-0.5 rounded mono border border-slate-700">+${fotosArray.length - 1} fotos</span>`
-                       : ""
-                   }
-                 </div>`
-                : `<div class="thumb-empty mx-auto">
-                   <i class="fa-regular fa-image text-xl text-slate-600"></i>
-                   <span>Sem foto</span>
-                 </div>`
+                ? `<div class="thumb-wrap" onclick="abrirLightbox('${fotosString}', 0)">
+                     <img src="${fotoUrl}" alt="Foto OS ${os.numero_os || ""}" loading="lazy">
+                     ${
+                       fotosArray.length > 1
+                         ? `<span class="absolute bottom-2 right-2 bg-slate-900/90 text-white text-[10px] px-2 py-0.5 rounded mono border border-slate-700 z-10">+${fotosArray.length - 1} fotos</span>`
+                         : ""
+                     }
+                     <div class="absolute inset-0 bg-slate-950/40 opacity-0 hover:opacity-100 transition flex items-center justify-center pointer-events-none">
+                       <span class="text-white text-xs font-semibold drop-shadow"><i class="fa-solid fa-magnifying-glass-plus mr-1"></i> Ampliar</span>
+                     </div>
+                   </div>`
+                : `<div class="w-full h-[180px] sm:h-full sm:min-h-[180px] bg-darkbase flex flex-col items-center justify-center text-slate-600 gap-1">
+                     <i class="fa-regular fa-image text-2xl"></i>
+                     <span class="text-[10px] mono">Sem foto</span>
+                   </div>`
             }
-          </td>
+          </div>
 
-          <!-- OS — NÚMERO EM DESTAQUE -->
-          <td class="p-3">
-            <span class="sm:hidden text-[10px] text-slate-500 block font-normal mb-1 mono">OS</span>
-            <div class="inline-flex items-center gap-2 bg-blue-600/10 border border-blue-500/30 rounded-lg px-3 py-1.5">
-              <span class="text-[10px] mono text-blue-400 uppercase tracking-widest hidden sm:inline">OS</span>
-              <span class="os-numero mono font-bold text-blue-300 leading-none">${os.numero_os || "S/N"}</span>
+          <!-- INFO -->
+          <div class="flex-1 p-4 flex flex-col gap-2 min-w-0">
+            <!-- Linha topo: OS + Status -->
+            <div class="flex items-start justify-between gap-3">
+              <div class="inline-flex items-center gap-2 bg-blue-600/10 border border-blue-500/30 rounded-lg px-3 py-1.5">
+                <span class="text-[10px] mono text-blue-400 uppercase tracking-widest">OS</span>
+                <span class="os-numero mono font-bold text-blue-300 leading-none">${os.numero_os || "S/N"}</span>
+              </div>
+              ${badgeStatus}
             </div>
-          </td>
 
-          <!-- CLIENTE -->
-          <td class="p-3 font-semibold text-slate-200">
-            <span class="sm:hidden text-[10px] text-slate-500 block font-normal">Cliente</span>
-            <span class="truncate block max-w-[200px]" title="${os.nome || "Sem nome"}">${os.nome || "Sem nome"}</span>
-          </td>
+            <!-- Cliente -->
+            <p class="text-sm font-semibold text-slate-100 truncate" title="${os.nome || "Sem nome"}">
+              <i class="fa-solid fa-user text-slate-500 text-[11px] mr-1.5"></i>
+              ${os.nome || "Sem nome"}
+            </p>
 
-          <!-- COR -->
-          <td class="p-3 text-slate-300 mono text-xs">
-            <span class="sm:hidden text-[10px] text-slate-500 block font-normal">Cor</span>
-            ${os.cor || "—"}
-          </td>
+            <!-- Cor + Data -->
+            <div class="flex items-center gap-4 text-[11px] mono text-slate-400 flex-wrap">
+              <span><i class="fa-solid fa-palette mr-1.5 text-slate-500"></i>${os.cor || "—"}</span>
+              <span><i class="fa-regular fa-calendar mr-1.5 text-slate-500"></i>${dataFmt}</span>
+            </div>
 
-          <!-- STATUS -->
-          <td class="p-3 text-center">
-            <span class="sm:hidden text-[10px] text-slate-500 block font-normal mb-1">Status</span>
-            ${badgeStatus}
-          </td>
-
-          <!-- DATA -->
-          <td class="p-3 text-center mono text-slate-400 text-xs">
-            <span class="sm:hidden text-[10px] text-slate-500 block font-normal">Data</span>
-            ${dataFmt}
-          </td>
-
-          <!-- AÇÕES -->
-          <td class="p-3 sm:text-right">
-            <span class="sm:hidden text-[10px] text-slate-500 block font-normal mb-1">Ações</span>
-            <div class="flex items-center justify-end gap-2">
-              <button onclick="adicionarNovaFoto('${os.id}', '${fotosString}')" class="p-2 bg-darkbase hover:bg-slate-800 text-slate-300 rounded border border-panelborder transition text-xs" title="Adicionar Foto"><i class="fa-solid fa-camera"></i></button>
+            <!-- Ações -->
+            <div class="flex items-center justify-end gap-2 mt-auto pt-2 border-t border-panelborder/50">
+              <button onclick="adicionarNovaFoto('${os.id}', '${fotosString}')" class="p-2 bg-darkbase hover:bg-slate-800 text-slate-300 rounded border border-panelborder transition text-xs flex items-center gap-1.5" title="Adicionar Foto">
+                <i class="fa-solid fa-camera"></i>
+                <span class="hidden sm:inline mono text-[11px]">Foto</span>
+              </button>
               ${acoesHtml}
             </div>
-          </td>
-        </tr>
-      `;
+          </div>
+        </div>
+      </div>
+    `;
     })
     .join("");
 }

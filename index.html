@@ -49,12 +49,12 @@
         font-family: "JetBrains Mono", monospace;
       }
       ::-webkit-scrollbar {
-        width: 5px;
-        height: 5px;
+        width: 6px;
+        height: 6px;
       }
       ::-webkit-scrollbar-thumb {
         background: #1e293b;
-        border-radius: 2px;
+        border-radius: 3px;
       }
       ::-webkit-scrollbar-track {
         background: transparent;
@@ -85,15 +85,27 @@
         border: 1px solid #1e293b;
       }
 
+      /* ====== CARD DE CADA RODA ====== */
+      .roda-card {
+        box-shadow:
+          0 1px 0 rgba(255, 255, 255, 0.02),
+          0 4px 14px rgba(0, 0, 0, 0.35);
+        transition: all 0.2s ease;
+      }
+      .roda-card:hover {
+        transform: translateY(-1px);
+        box-shadow:
+          0 1px 0 rgba(255, 255, 255, 0.02),
+          0 8px 22px rgba(0, 0, 0, 0.5);
+      }
+
       /* ====== MINIATURA RESPONSIVA ====== */
       .thumb-wrap {
         position: relative;
         width: 100%;
-        aspect-ratio: 4 / 3;
-        border-radius: 8px;
+        height: 100%;
         overflow: hidden;
         background: #0b0f1a;
-        border: 1px solid #1a233a;
         cursor: pointer;
       }
       .thumb-wrap img {
@@ -101,67 +113,46 @@
         height: 100%;
         object-fit: cover;
         display: block;
-        transition: transform 0.3s ease;
+        transition: transform 0.35s ease;
       }
       .thumb-wrap:hover img {
-        transform: scale(1.05);
-      }
-      .thumb-empty {
-        width: 100%;
-        aspect-ratio: 4 / 3;
-        border-radius: 8px;
-        background: #0b0f1a;
-        border: 1px dashed #1a233a;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        color: #64748b;
-        gap: 6px;
-        font-size: 11px;
+        transform: scale(1.06);
       }
 
       /* ====== NÚMERO DA OS EM DESTAQUE ====== */
       .os-numero {
-        font-size: 1.5rem; /* 24px no celular */
+        font-size: 1.35rem;
         font-weight: 700;
         letter-spacing: 0.02em;
       }
-      @media (min-width: 768px) {
-        .os-numero {
-          font-size: 1.75rem; /* 28px no desktop */
-        }
+
+      /* ====== STATS CARDS ====== */
+      .stat-card {
+        transition:
+          border-color 0.2s ease,
+          transform 0.2s ease;
+      }
+      .stat-card:hover {
+        transform: translateY(-1px);
       }
 
-      /* ====== MODO CARD NO CELULAR ====== */
-      @media (max-width: 768px) {
-        /* Esconde cabeçalho de tabela */
-        thead {
-          display: none;
+      /* ====== CHIP DE COR ====== */
+      .cor-chip {
+        transition: all 0.15s ease;
+        cursor: pointer;
+      }
+      .cor-chip:hover {
+        background: #1e293b;
+        border-color: #3b82f6;
+      }
+
+      /* ====== MOBILE ====== */
+      @media (max-width: 640px) {
+        .roda-card .thumb-wrap {
+          height: 180px;
         }
-        /* Cada linha vira um card */
-        tbody tr {
-          display: block;
-          margin: 10px;
-          border: 1px solid #1a233a;
-          border-radius: 10px;
-          background: #0b0f1a;
-          overflow: hidden;
-        }
-        tbody td {
-          display: block;
-          width: 100% !important;
-          padding: 8px 12px !important;
-          text-align: left !important;
-          border: none;
-        }
-        /* A célula da foto ocupa destaque no topo */
-        tbody td:first-child {
-          padding: 0 !important;
-        }
-        /* Esconde "Ampliar" no hover em touch */
-        .thumb-wrap .overlay-hint {
-          opacity: 0;
+        .os-numero {
+          font-size: 1.15rem;
         }
       }
     </style>
@@ -191,28 +182,6 @@
         </h1>
       </div>
       <div class="flex items-center gap-4">
-        <div
-          class="hidden md:flex items-center gap-3 text-xs mono text-slate-400"
-        >
-          <span
-            >Total: <strong id="statTotal" class="text-white">0</strong></span
-          >
-          <span>•</span>
-          <span
-            >Produção:
-            <strong id="statProducao" class="text-amber-400">0</strong></span
-          >
-          <span>•</span>
-          <span
-            >Prontas:
-            <strong id="statProntas" class="text-blue-400">0</strong></span
-          >
-          <span>•</span>
-          <span
-            >Retiradas:
-            <strong id="statRetiradas" class="text-emerald-400">0</strong></span
-          >
-        </div>
         <button
           onclick="window.location.href = 'index.html'"
           class="text-xs mono bg-panelborder hover:bg-slate-800 text-slate-300 px-3 py-1.5 rounded transition border border-slate-800 flex items-center gap-1.5"
@@ -226,6 +195,111 @@
     <main
       class="flex-1 flex flex-col overflow-hidden p-4 gap-3 max-w-[1600px] w-full mx-auto"
     >
+      <!-- STATS CARDS -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 flex-shrink-0">
+        <div
+          class="stat-card bg-panel border border-panelborder rounded-lg p-3 flex items-center gap-3"
+        >
+          <div
+            class="w-10 h-10 rounded-lg bg-slate-500/10 border border-slate-500/20 flex items-center justify-center flex-shrink-0"
+          >
+            <i class="fa-solid fa-layer-group text-slate-300"></i>
+          </div>
+          <div class="min-w-0">
+            <p class="text-[10px] mono text-slate-500 uppercase tracking-wider">
+              Total
+            </p>
+            <p
+              id="statTotal"
+              class="text-xl font-bold text-white mono leading-none mt-1"
+            >
+              0
+            </p>
+          </div>
+        </div>
+
+        <div
+          class="stat-card bg-panel border border-amber-500/30 rounded-lg p-3 flex items-center gap-3"
+        >
+          <div
+            class="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center flex-shrink-0"
+          >
+            <i class="fa-solid fa-gear text-amber-400"></i>
+          </div>
+          <div class="min-w-0">
+            <p
+              class="text-[10px] mono text-amber-500/80 uppercase tracking-wider"
+            >
+              Em Produção
+            </p>
+            <p
+              id="statProducao"
+              class="text-xl font-bold text-amber-400 mono leading-none mt-1"
+            >
+              0
+            </p>
+          </div>
+        </div>
+
+        <div
+          class="stat-card bg-panel border border-blue-500/30 rounded-lg p-3 flex items-center gap-3"
+        >
+          <div
+            class="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0"
+          >
+            <i class="fa-solid fa-box-open text-blue-400"></i>
+          </div>
+          <div class="min-w-0">
+            <p
+              class="text-[10px] mono text-blue-500/80 uppercase tracking-wider"
+            >
+              Prontas
+            </p>
+            <p
+              id="statProntas"
+              class="text-xl font-bold text-blue-400 mono leading-none mt-1"
+            >
+              0
+            </p>
+          </div>
+        </div>
+
+        <div
+          class="stat-card bg-panel border border-emerald-500/30 rounded-lg p-3 flex items-center gap-3"
+        >
+          <div
+            class="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0"
+          >
+            <i class="fa-solid fa-circle-check text-emerald-400"></i>
+          </div>
+          <div class="min-w-0">
+            <p
+              class="text-[10px] mono text-emerald-500/80 uppercase tracking-wider"
+            >
+              Retiradas
+            </p>
+            <p
+              id="statRetiradas"
+              class="text-xl font-bold text-emerald-400 mono leading-none mt-1"
+            >
+              0
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONTAGEM POR COR -->
+      <div
+        id="statsPorCor"
+        class="bg-panel border border-panelborder rounded-lg px-3 py-2.5 flex items-center gap-2 flex-wrap flex-shrink-0 text-[11px] mono"
+      >
+        <span class="text-slate-500 uppercase tracking-wider mr-1"
+          ><i class="fa-solid fa-palette mr-1.5 text-blue-400"></i>Por
+          acabamento:</span
+        >
+        <span class="text-slate-600">carregando...</span>
+      </div>
+
       <!-- BARRA DE FILTROS E BUSCA -->
       <div
         class="bg-panel p-3 rounded border border-panelborder flex flex-col sm:flex-row items-center justify-between gap-3 flex-shrink-0"
@@ -276,38 +350,19 @@
         </div>
       </div>
 
-      <!-- TABELA / LISTA DE REFORMAS -->
+      <!-- LISTA DE RODAS (CARDS) -->
       <div
-        class="flex-1 bg-panel rounded border border-panelborder overflow-y-auto relative"
+        id="listaReformas"
+        class="flex-1 overflow-y-auto space-y-3 pr-1 pb-2"
       >
-        <table class="w-full text-left border-collapse">
-          <thead
-            class="bg-darkbase sticky top-0 z-10 border-b border-panelborder text-[11px] mono text-slate-400 uppercase tracking-wider"
-          >
-            <tr>
-              <th class="p-3 w-52 text-center">Foto Grande (Destaque)</th>
-              <th class="p-3 w-32">OS Nº</th>
-              <th class="p-3">Cliente</th>
-              <th class="p-3 w-40">Acabamento / Cor</th>
-              <th class="p-3 w-32 text-center">Status</th>
-              <th class="p-3 w-28 text-center">Data</th>
-              <th class="p-3 w-44 text-right">Ações</th>
-            </tr>
-          </thead>
-          <tbody
-            id="listaReformas"
-            class="divide-y divide-panelborder/50 text-xs"
-          >
-            <tr>
-              <td colspan="7" class="py-16 text-center text-slate-500 mono">
-                <i
-                  class="fa-solid fa-circle-notch fa-spin text-xl text-blue-500 mb-2 block"
-                ></i>
-                Carregando registros do servidor...
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div
+          class="flex flex-col items-center justify-center py-16 text-slate-500 mono"
+        >
+          <i
+            class="fa-solid fa-circle-notch fa-spin text-2xl text-blue-500 mb-3 block"
+          ></i>
+          Carregando registros do servidor...
+        </div>
       </div>
     </main>
 
