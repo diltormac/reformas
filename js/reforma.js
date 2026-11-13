@@ -27,7 +27,7 @@ function comprimirImagem(file) {
       img.src = event.target.result;
       img.onload = () => {
         const canvas = document.createElement("canvas");
-        const MAX = 1280;
+        const MAX = 1280; // Aumentado um pouco para dar mais nitidez na miniatura grande
         let width = img.width;
         let height = img.height;
         if (width > height && width > MAX) {
@@ -204,102 +204,25 @@ window.adicionarNovaFoto = async function (id, fotosAtuaisString) {
 };
 
 // =========================================================
-// TECLADO VIRTUAL (OPÇÃO 2)
-// =========================================================
-function abrirTecladoVirtual({ titulo, texto, corConfirmacao }) {
-  return new Promise((resolve) => {
-    let senhaDigitada = "";
-
-    const atualizarVisor = () => {
-      const visor = document.getElementById("visorSenhaCustom");
-      if (visor) {
-        // Mostra bolinhas (••••) em vez dos números
-        visor.textContent = senhaDigitada.padEnd(4, "•");
-      }
-    };
-
-    Swal.fire({
-      title: titulo,
-      text: texto,
-      html: `
-        <div class="flex flex-col items-center gap-4 mt-2">
-          <div id="visorSenhaCustom" 
-               class="text-center text-3xl font-bold tracking-[0.5em] w-40 py-2 border-b-2 border-slate-500 text-white cursor-default">
-               ••••
-          </div>
-          
-          <div class="grid grid-cols-3 gap-2 w-full max-w-[240px]">
-            ${[1, 2, 3, 4, 5, 6, 7, 8, 9]
-              .map(
-                (num) => `
-              <button type="button" data-num="${num}" class="btn-teclado bg-slate-700 hover:bg-slate-600 text-white text-xl font-bold py-3 rounded-lg transition">
-                ${num}
-              </button>
-            `,
-              )
-              .join("")}
-            
-            <button type="button" data-num="limpar" class="btn-teclado bg-red-900/50 hover:bg-red-800 text-red-200 text-sm font-bold py-3 rounded-lg transition">
-              C
-            </button>
-            <button type="button" data-num="0" class="btn-teclado bg-slate-700 hover:bg-slate-600 text-white text-xl font-bold py-3 rounded-lg transition">
-              0
-            </button>
-            <button type="button" data-num="backspace" class="btn-teclado bg-amber-900/50 hover:bg-amber-800 text-amber-200 text-sm font-bold py-3 rounded-lg transition">
-              <i class="fa-solid fa-delete-left"></i>
-            </button>
-          </div>
-        </div>
-      `,
-      background: "#0e1320",
-      color: "#cbd5e1",
-      confirmButtonColor: corConfirmacao,
-      showCancelButton: true,
-      allowOutsideClick: false,
-      didOpen: () => {
-        // Adiciona o evento de clique nos botões do teclado
-        document.querySelectorAll(".btn-teclado").forEach((btn) => {
-          btn.addEventListener("click", (e) => {
-            e.preventDefault();
-            const num = btn.getAttribute("data-num");
-
-            if (num === "limpar") {
-              senhaDigitada = "";
-            } else if (num === "backspace") {
-              senhaDigitada = senhaDigitada.slice(0, -1);
-            } else if (senhaDigitada.length < 4) {
-              senhaDigitada += num;
-            }
-            atualizarVisor();
-          });
-        });
-      },
-      preConfirm: () => {
-        // Devolve a senha digitada para a função original
-        return senhaDigitada;
-      },
-    }).then((result) => {
-      resolve(result);
-    });
-  });
-}
-
-// =========================================================
-// FINALIZAR SERVIÇO (USANDO O TECLADO VIRTUAL)
+// FINALIZAR / REABRIR SERVIÇO
 // =========================================================
 window.marcarServicoFinalizado = async function (id, numeroOs) {
-  const { value: senha } = await abrirTecladoVirtual({
-    titulo: "Finalizar OS",
-    texto: `Digite a senha para concluir OS #${numeroOs || "S/N"}:`,
-    corConfirmacao: "#2563eb", // Azul
+  const { value: senha } = await Swal.fire({
+    title: "Finalizar OS",
+    text: `Senha exigida para concluir OS #${numeroOs || "S/N"}:`,
+    input: "password",
+    inputPlaceholder: "Senha...",
+    background: "#0e1320",
+    color: "#cbd5e1",
+    confirmButtonColor: "#2563eb",
+    showCancelButton: true,
   });
 
-  if (!senha) return; // Usuário cancelou
+  if (!senha) return;
   if (senha !== SENHA_MESTRA) {
     Swal.fire({
       icon: "error",
       title: "Senha Incorreta",
-      text: "A senha digitada está errada.",
       background: "#0e1320",
       color: "#cbd5e1",
     });
@@ -318,14 +241,16 @@ window.marcarServicoFinalizado = async function (id, numeroOs) {
   }
 };
 
-// =========================================================
-// REABRIR SERVIÇO (USANDO O TECLADO VIRTUAL)
-// =========================================================
 window.reabrirServico = async function (id, numeroOs) {
-  const { value: senha } = await abrirTecladoVirtual({
-    titulo: "Reabrir OS",
-    texto: `Digite a senha para reabrir OS #${numeroOs || "S/N"}:`,
-    corConfirmacao: "#d97706", // Laranja
+  const { value: senha } = await Swal.fire({
+    title: "Reabrir OS",
+    text: `Senha exigida para reabrir OS #${numeroOs || "S/N"}:`,
+    input: "password",
+    inputPlaceholder: "Senha...",
+    background: "#0e1320",
+    color: "#cbd5e1",
+    confirmButtonColor: "#d97706",
+    showCancelButton: true,
   });
 
   if (!senha) return;
@@ -333,7 +258,6 @@ window.reabrirServico = async function (id, numeroOs) {
     Swal.fire({
       icon: "error",
       title: "Senha Incorreta",
-      text: "A senha digitada está errada.",
       background: "#0e1320",
       color: "#cbd5e1",
     });
